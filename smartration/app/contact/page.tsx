@@ -37,7 +37,7 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-center mb-8">Contact Us</h1>
 
       <div className="max-w-5xl mx-auto">
@@ -49,7 +49,7 @@ export default function ContactPage() {
               <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
                 <h3 className="text-xl font-semibold text-green-700 mb-2">Thank You!</h3>
                 <p className="text-green-600 mb-4">
-                  Your message has been received. We'll get back to you as soon as possible.
+                  Your message has been received. We&apos;ll get back to you as soon as possible.
                 </p>
                 <Button onClick={() => setIsSubmitted(false)} className="bg-green-600 hover:bg-green-700 text-white">
                   Send Another Message
@@ -164,7 +164,7 @@ export default function ContactPage() {
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Hackathon Information</h3>
               <p className="text-gray-600 mb-4">
-                SmartRation is a project developed for the UC Berkeley AI Hackathon. We're currently in the MVP stage
+                SmartRation is a project developed for the UC Berkeley AI Hackathon. We&apos;re currently in the MVP stage
                 and looking for feedback and collaboration opportunities.
               </p>
               <Button variant="outline" className="w-full bg-white text-green-600 border-green-600">

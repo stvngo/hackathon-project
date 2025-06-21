@@ -3,7 +3,12 @@
 // In a real implementation, these functions would interact with AI models
 // For this MVP, we'll simulate the process with mock data
 
-export async function processImages(fridgeImage: File, receiptImage: File) {
+export async function processImages(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _fridgeImage: File,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _receiptImage: File
+) {
   // This would process the images using OCR and image recognition
   // For now, we'll just simulate a delay
   await new Promise((resolve) => setTimeout(resolve, 2000))

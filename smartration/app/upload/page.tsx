@@ -42,7 +42,7 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-center mb-8">Upload Your Photos</h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-3xl mx-auto">
@@ -63,7 +63,6 @@ export default function UploadPage() {
                   icon={<Camera className="h-8 w-8 text-green-600" />}
                   label="Upload Fridge Photo"
                   onChange={(file) => setFridgeImage(file)}
-                  imagePreview={fridgeImage}
                 />
               </div>
 
@@ -76,7 +75,6 @@ export default function UploadPage() {
                   icon={<Receipt className="h-8 w-8 text-green-600" />}
                   label="Upload Receipt Photo"
                   onChange={(file) => setReceiptImage(file)}
-                  imagePreview={receiptImage}
                 />
               </div>
 

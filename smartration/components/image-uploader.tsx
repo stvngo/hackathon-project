@@ -10,10 +10,9 @@ interface ImageUploaderProps {
   onChange: (file: File) => void
   icon?: ReactNode
   label: string
-  imagePreview: File | null
 }
 
-export default function ImageUploader({ onChange, icon, label, imagePreview }: ImageUploaderProps) {
+export default function ImageUploader({ onChange, icon, label }: ImageUploaderProps) {
   const [preview, setPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 

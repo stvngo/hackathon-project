@@ -87,8 +87,11 @@ export default function SignupPage() {
 
       // Redirect to onboarding
       router.push("/onboarding")
-    } catch (err) {
-      setError("Account creation failed. Please try again.")
+    } catch (
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      _err
+    ) {
+      setError("Sign up failed. Please try again.")
     } finally {
       setIsLoading(false)
     }

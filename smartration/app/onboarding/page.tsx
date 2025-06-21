@@ -28,6 +28,11 @@ interface OnboardingData {
   shoppingFrequency: string
 }
 
+interface UserData {
+  email: string
+  firstName?: string
+}
+
 const STEPS = [
   { id: 1, title: "Dietary Restrictions", icon: Heart },
   { id: 2, title: "Household Info", icon: Users },
@@ -40,7 +45,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
-  const [userData, setUserData] = useState<any>(null)
+  const [userData, setUserData] = useState<UserData | null>(null)
 
   const [formData, setFormData] = useState<OnboardingData>({
     allergies: [],
@@ -105,7 +110,7 @@ export default function OnboardingPage() {
     }
   }
 
-  const updateFormData = (field: keyof OnboardingData, value: any) => {
+  const updateFormData = (field: keyof OnboardingData, value: string | number | boolean | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -124,7 +129,7 @@ export default function OnboardingPage() {
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome, {userData.firstName}!</h1>
-          <p className="text-gray-600">Let's personalize your meal planning experience</p>
+          <p className="text-gray-600">Let&apos;s personalize your meal planning experience</p>
           <Progress value={progress} className="mt-4" />
           <p className="text-sm text-gray-500 mt-2">
             Step {currentStep} of {STEPS.length}
@@ -268,7 +273,7 @@ export default function OnboardingPage() {
                 <ChefHat className="h-12 w-12 text-green-600 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold mb-2">What Do You Love to Eat?</h2>
                 <p className="text-gray-600">
-                  This helps us recommend groceries and create meals you'll actually enjoy
+                  This helps us recommend groceries and create meals you&apos;ll actually enjoy
                 </p>
               </div>
 
@@ -370,7 +375,7 @@ export default function OnboardingPage() {
                     Are there any specific ingredients you want to avoid?
                   </Label>
                   <p className="text-sm text-gray-500 mb-2">
-                    Besides allergies - maybe you just don't like certain foods
+                    Besides allergies - maybe you just don&apos;t like certain foods
                   </p>
                   <Textarea
                     id="avoidIngredients"
@@ -396,7 +401,7 @@ export default function OnboardingPage() {
               <div className="space-y-6">
                 <div>
                   <Label className="text-base font-medium">
-                    When you run out of food, what's your maximum spending limit for restocking?
+                    When you run out of food, what&apos;s your maximum spending limit for restocking?
                   </Label>
                   <p className="text-sm text-gray-500 mb-4">
                     This helps us prioritize essential items and suggest budget-friendly alternatives

@@ -5,7 +5,7 @@ import { ArrowRight, Camera, ChefHat, Receipt, ShoppingCart, Utensils } from "lu
 
 export default function HowItWorksPage() {
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-center mb-8">How SmartRation Works</h1>
 
       <div className="max-w-4xl mx-auto">
@@ -47,7 +47,7 @@ export default function HowItWorksPage() {
             <div className="md:w-1/2 md:pl-12 mb-4 md:mb-0 text-center md:text-left">
               <h2 className="text-xl font-bold mb-2">Step 2: Upload Receipt</h2>
               <p className="text-gray-600">
-                Upload your grocery receipt so we can identify what you've purchased and the associated costs.
+                Upload your grocery receipt so we can identify what you&apos;ve purchased and the associated costs.
               </p>
             </div>
             <div className="z-10 flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white">

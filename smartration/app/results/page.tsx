@@ -16,15 +16,7 @@ interface MealItem {
   recipe: string
 }
 
-interface DayPlan {
-  day: string
-  breakfast: MealItem
-  lunch: MealItem
-  dinner: MealItem
-}
-
 export default function ResultsPage() {
-  const [mealPlan, setMealPlan] = useState<DayPlan[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("day1")
 
@@ -33,8 +25,7 @@ export default function ResultsPage() {
       try {
         // In a real implementation, this would fetch the actual meal plan
         // For this MVP, we'll use mock data
-        const plan = await getMealPlan()
-        setMealPlan(plan)
+        await getMealPlan()
       } catch (error) {
         console.error("Error loading meal plan:", error)
       } finally {
@@ -60,7 +51,7 @@ export default function ResultsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex items-center mb-8">
         <Link href="/upload">
           <Button variant="outline" size="sm" className="mr-4">

@@ -99,4 +99,4 @@ export async function getMealPlan(): Promise<DayPlan[]> {
   ]
 
   return mockMealPlan
-}
+} 

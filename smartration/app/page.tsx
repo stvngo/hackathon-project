@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ArrowRight, Camera, Receipt, Utensils } from "lucide-react"
+import { ArrowRight, Receipt, Utensils } from "lucide-react"
 
 export default function Home() {
   return (
@@ -14,7 +14,7 @@ export default function Home() {
                 Smart Meal Planning for Budget-Conscious Living
               </h1>
               <p className="text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Upload a photo of your fridge and your grocery receipt to get a budget-friendly meal plan with
+                Upload a photo of your grocery receipt to get a budget-friendly meal plan with
                 nutritional tips.
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -51,16 +51,7 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-3 lg:gap-12">
-            <Card className="flex flex-col items-center space-y-4 p-6 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <Camera className="h-8 w-8 text-green-600" />
-              </div>
-              <h3 className="text-xl font-bold">Snap Photos</h3>
-              <p className="text-gray-500">
-                Take a picture of your refrigerator contents to let our AI see what ingredients you have on hand.
-              </p>
-            </Card>
+          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-2 lg:gap-12">
             <Card className="flex flex-col items-center space-y-4 p-6 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
                 <Receipt className="h-8 w-8 text-green-600" />

@@ -1,21 +1,21 @@
 "use server"
 
+import { extractReceiptData } from "@/lib/vision-api"
+
 // In a real implementation, these functions would interact with AI models
 // For this MVP, we'll simulate the process with mock data
 
-export async function processImages(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _fridgeImage: File,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _receiptImage: File
-) {
-  // This would process the images using OCR and image recognition
-  // For now, we'll just simulate a delay
-  await new Promise((resolve) => setTimeout(resolve, 2000))
+interface ReceiptItem {
+  name: string
+  price: number
+  quantity?: number
+}
 
-  // Store the results in a database or session
-  // For this MVP, we'll just return success
-  return { success: true }
+interface ReceiptData {
+  items: ReceiptItem[]
+  total: number
+  store?: string
+  date?: string
 }
 
 interface MealItem {
@@ -33,8 +33,34 @@ interface DayPlan {
   dinner: MealItem
 }
 
+export async function processImages(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _fridgeImage: File | null,
+  receiptImage: File
+) {
+  try {
+    // Convert the receipt image to base64
+    const arrayBuffer = await receiptImage.arrayBuffer()
+    const base64 = Buffer.from(arrayBuffer).toString('base64')
+    const imageBase64 = `data:${receiptImage.type};base64,${base64}`
+
+    // Extract receipt data using Google Cloud Vision API
+    const receiptData = await extractReceiptData(imageBase64)
+    
+    // Store the receipt data in a database or session
+    // For this MVP, we'll just return success with the data
+    return { 
+      success: true, 
+      receiptData 
+    }
+  } catch (error) {
+    console.error('Error processing receipt:', error)
+    throw new Error('Failed to process receipt image')
+  }
+}
+
 export async function getMealPlan(): Promise<DayPlan[]> {
-  // In a real implementation, this would generate a meal plan based on the processed images
+  // In a real implementation, this would generate a meal plan based on the processed receipt data
   // For this MVP, we'll return mock data
 
   // Simulate a delay to represent AI processing time

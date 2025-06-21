@@ -6,70 +6,73 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Camera, Receipt } from "lucide-react"
+import { Receipt, CheckCircle } from "lucide-react"
 import { processImages } from "@/app/actions"
 import ImageUploader from "@/components/image-uploader"
 
+interface ReceiptItem {
+  name: string
+  price: number
+  quantity?: number
+}
+
+interface ReceiptData {
+  items: ReceiptItem[]
+  total: number
+  store?: string
+  date?: string
+}
+
 export default function UploadPage() {
   const router = useRouter()
-  const [fridgeImage, setFridgeImage] = useState<File | null>(null)
   const [receiptImage, setReceiptImage] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState("upload")
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!fridgeImage || !receiptImage) {
-      alert("Please upload both a fridge photo and a receipt photo")
+    if (!receiptImage) {
+      alert("Please upload a receipt photo")
       return
     }
 
-    setIsLoading(true)
+    setIsProcessing(true)
 
     try {
-      // In a real implementation, we would upload the images and process them
-      // For this MVP, we'll simulate the process and redirect to results
-      await processImages(fridgeImage, receiptImage)
-      router.push("/results")
+      // Process the receipt image using Google Cloud Vision API
+      const result = await processImages(null, receiptImage)
+      
+      if (result.success && result.receiptData) {
+        setReceiptData(result.receiptData)
+      }
     } catch (error) {
-      console.error("Error processing images:", error)
-      alert("There was an error processing your images. Please try again.")
+      console.error("Error processing image:", error)
+      alert("There was an error processing your image. Please try again.")
     } finally {
-      setIsLoading(false)
+      setIsProcessing(false)
     }
+  }
+
+  const handleGenerateMealPlan = () => {
+    setIsLoading(true)
+    // Navigate to results page
+    router.push("/results")
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-center mb-8">Upload Your Photos</h1>
+      <h1 className="text-3xl font-bold text-center mb-8">Upload Your Receipt</h1>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-3xl mx-auto">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="upload">Upload Photos</TabsTrigger>
-          <TabsTrigger value="camera">Take Photos</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="upload" className="mt-6">
+      <div className="max-w-3xl mx-auto">
+        {!receiptData ? (
           <Card className="p-6">
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Fridge Photo</h2>
-                <p className="text-gray-500">
-                  Upload a clear photo of your refrigerator contents so we can identify available ingredients.
-                </p>
-                <ImageUploader
-                  icon={<Camera className="h-8 w-8 text-green-600" />}
-                  label="Upload Fridge Photo"
-                  onChange={(file) => setFridgeImage(file)}
-                />
-              </div>
-
-              <div className="space-y-4">
                 <h2 className="text-xl font-semibold">Receipt Photo</h2>
                 <p className="text-gray-500">
-                  Upload a photo of your grocery receipt so we can identify purchased items and their costs.
+                  Upload a clear photo of your grocery receipt so we can identify purchased items and their costs.
                 </p>
                 <ImageUploader
                   icon={<Receipt className="h-8 w-8 text-green-600" />}
@@ -81,35 +84,62 @@ export default function UploadPage() {
               <Button
                 type="submit"
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
-                disabled={isLoading || !fridgeImage || !receiptImage}
+                disabled={isProcessing || !receiptImage}
               >
-                {isLoading ? "Processing..." : "Generate Meal Plan"}
+                {isProcessing ? "Processing Receipt..." : "Process Receipt"}
               </Button>
             </form>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="camera" className="mt-6">
+        ) : (
           <Card className="p-6">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Take Fridge Photo</h2>
-                <p className="text-gray-500">Use your camera to take a clear photo of your refrigerator contents.</p>
-                <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
-                  <Camera className="h-12 w-12 text-gray-400 mb-4" />
-                  <p className="text-sm text-gray-500">Camera functionality will be available in the full version</p>
-                  <Button
-                    className="mt-4 bg-green-600 hover:bg-green-700 text-white"
-                    onClick={() => setActiveTab("upload")}
-                  >
-                    Switch to Upload
-                  </Button>
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="h-5 w-5" />
+                <h2 className="text-xl font-semibold">Receipt Processed Successfully!</h2>
+              </div>
+
+              {receiptData.store && (
+                <div>
+                  <h3 className="font-medium text-gray-900">Store: {receiptData.store}</h3>
+                </div>
+              )}
+
+              {receiptData.date && (
+                <div>
+                  <h3 className="font-medium text-gray-900">Date: {receiptData.date}</h3>
+                </div>
+              )}
+
+              <div>
+                <h3 className="font-medium text-gray-900 mb-3">Items Found:</h3>
+                <div className="space-y-2">
+                  {receiptData.items.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <span className="text-gray-700">{item.name}</span>
+                      <span className="font-medium">${item.price.toFixed(2)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
+
+              <div className="border-t pt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold">Total:</span>
+                  <span className="text-lg font-bold text-green-600">${receiptData.total.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleGenerateMealPlan}
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? "Generating Meal Plan..." : "Generate Meal Plan"}
+              </Button>
             </div>
           </Card>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </div>
   )
 }

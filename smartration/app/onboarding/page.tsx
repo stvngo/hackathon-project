@@ -130,8 +130,8 @@ export default function OnboardingPage() {
       // Clear onboarding data from localStorage
       localStorage.removeItem('onboarding_user')
 
-      // Redirect to upload page
-      router.push("/upload")
+      // Redirect to dashboard
+      router.push("/dashboard")
     } catch (error) {
       console.error("Error completing onboarding:", error)
       // You might want to show an error message to the user here

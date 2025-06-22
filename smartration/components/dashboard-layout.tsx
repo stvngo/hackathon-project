@@ -7,10 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import {
-  BarChart3,
   ChefHat,
   Home,
-  History,
   Menu,
   Receipt,
   Settings,
@@ -25,12 +23,10 @@ interface DashboardLayoutProps {
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
+  { name: "FoodGPT", href: "/dashboard/foodgpt", icon: ChefHat },
   { name: "Upload Receipt", href: "/dashboard/upload", icon: Receipt },
   { name: "AI Meal Plans", href: "/dashboard/ai-meal-plans", icon: Menu },
   { name: "Saved Meals", href: "/dashboard/saved-meals", icon: Heart },
-  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-  { name: "History", href: "/dashboard/history", icon: History },
-  { name: "FoodGPT", href: "/dashboard/foodgpt", icon: ChefHat },
   { name: "Profile", href: "/dashboard/profile", icon: User },
 ]
 

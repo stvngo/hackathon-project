@@ -28,9 +28,9 @@ export default function HowItWorksPage() {
               <Card className="overflow-hidden">
                 <div className="aspect-video bg-gray-100 flex items-center justify-center">
                   <img
-                    src="/placeholder.svg?height=200&width=400"
-                    alt="Refrigerator photo example"
-                    className="object-cover"
+                    src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=200&fit=crop&crop=center"
+                    alt="Refrigerator with fresh ingredients"
+                    className="object-cover w-full h-full"
                   />
                 </div>
                 <div className="p-4">
@@ -57,9 +57,9 @@ export default function HowItWorksPage() {
               <Card className="overflow-hidden">
                 <div className="aspect-video bg-gray-100 flex items-center justify-center">
                   <img
-                    src="/placeholder.svg?height=200&width=400"
-                    alt="Receipt photo example"
-                    className="object-cover"
+                    src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=200&fit=crop&crop=center"
+                    alt="Grocery receipt with items listed"
+                    className="object-cover w-full h-full"
                   />
                 </div>
                 <div className="p-4">
@@ -83,29 +83,38 @@ export default function HowItWorksPage() {
               <ShoppingCart className="h-5 w-5" />
             </div>
             <div className="md:w-1/2 md:pl-12 mt-4 md:mt-0">
-              <Card className="p-4">
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-start">
-                    <span className="text-green-600 mr-2">•</span>
-                    Identifies what you already have
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-600 mr-2">•</span>
-                    Calculates costs per meal
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-600 mr-2">•</span>
-                    Considers nutritional balance
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-600 mr-2">•</span>
-                    Prioritizes using perishable items first
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-600 mr-2">•</span>
-                    Minimizes food waste
-                  </li>
-                </ul>
+              <Card className="overflow-hidden">
+                <div className="aspect-video bg-gray-100 flex items-center justify-center">
+                  <img
+                    src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=200&fit=crop&crop=center"
+                    alt="AI analysis dashboard with data visualization"
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+                <div className="p-4">
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-start">
+                      <span className="text-green-600 mr-2">•</span>
+                      Identifies what you already have
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-600 mr-2">•</span>
+                      Calculates costs per meal
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-600 mr-2">•</span>
+                      Considers nutritional balance
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-600 mr-2">•</span>
+                      Prioritizes using perishable items first
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-600 mr-2">•</span>
+                      Minimizes food waste
+                    </li>
+                  </ul>
+                </div>
               </Card>
             </div>
           </div>
@@ -122,29 +131,38 @@ export default function HowItWorksPage() {
               <ChefHat className="h-5 w-5" />
             </div>
             <div className="md:w-1/2 md:pr-12 mt-4 md:mt-0">
-              <Card className="p-4">
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-start">
-                    <span className="text-green-600 mr-2">•</span>
-                    Simple, easy-to-follow recipes
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-600 mr-2">•</span>
-                    Minimal additional ingredients needed
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-600 mr-2">•</span>
-                    Variety of meal types
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-600 mr-2">•</span>
-                    Adaptable to dietary restrictions
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-600 mr-2">•</span>
-                    Budget-conscious options
-                  </li>
-                </ul>
+              <Card className="overflow-hidden">
+                <div className="aspect-video bg-gray-100 flex items-center justify-center">
+                  <img
+                    src="https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=200&fit=crop&crop=center"
+                    alt="Delicious home-cooked meal with recipe ingredients"
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+                <div className="p-4">
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-start">
+                      <span className="text-green-600 mr-2">•</span>
+                      Simple, easy-to-follow recipes
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-600 mr-2">•</span>
+                      Minimal additional ingredients needed
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-600 mr-2">•</span>
+                      Variety of meal types
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-600 mr-2">•</span>
+                      Adaptable to dietary restrictions
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-600 mr-2">•</span>
+                      Budget-conscious options
+                    </li>
+                  </ul>
+                </div>
               </Card>
             </div>
           </div>
@@ -163,7 +181,11 @@ export default function HowItWorksPage() {
             <div className="md:w-1/2 md:pl-12 mt-4 md:mt-0">
               <Card className="overflow-hidden">
                 <div className="aspect-video bg-gray-100 flex items-center justify-center">
-                  <img src="/placeholder.svg?height=200&width=400" alt="Meal plan example" className="object-cover" />
+                  <img 
+                    src="https://images.unsplash.com/photo-1547592180-85f173990888?w=400&h=200&fit=crop&crop=center" 
+                    alt="Weekly meal plan with organized recipes" 
+                    className="object-cover w-full h-full" 
+                  />
                 </div>
                 <div className="p-4">
                   <p className="text-sm text-gray-500">

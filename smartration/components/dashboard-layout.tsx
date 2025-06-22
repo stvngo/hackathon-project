@@ -25,7 +25,7 @@ interface DashboardLayoutProps {
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Upload Receipt", href: "/dashboard/upload", icon: Receipt },
-  { name: "Meal Plans", href: "/dashboard/meal-plans", icon: Menu },
+  { name: "AI Meal Plans", href: "/dashboard/ai-meal-plans", icon: Menu },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { name: "History", href: "/dashboard/history", icon: History },
   { name: "FoodGPT", href: "/dashboard/foodgpt", icon: ChefHat },

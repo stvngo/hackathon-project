@@ -38,9 +38,13 @@ export default function UploadPage() {
       
       if (result.success) {
         console.log("Receipt processed successfully:", result)
-        // For now, redirect to meal plans page
-        // In the future, this will redirect to a page with AI-generated meal plans
-        router.push("/dashboard/meal-plans")
+        // Store meal plans in localStorage as fallback
+        if (result.mealPlans) {
+          localStorage.setItem('currentMealPlans', JSON.stringify(result.mealPlans))
+        }
+        // Redirect to AI meal plans page with the generated data
+        const mealPlansParam = encodeURIComponent(JSON.stringify(result.mealPlans || []))
+        router.push(`/dashboard/ai-meal-plans?mealPlans=${mealPlansParam}`)
       } else {
         setError("Failed to process receipt. Please try again.")
       }

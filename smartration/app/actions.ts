@@ -1,6 +1,7 @@
 "use server"
 
 import { extractReceiptData } from "@/lib/vision-api"
+import { generateMealPlan } from "@/lib/claude-ai"
 import { createClient } from "@/lib/supabase-server"
 
 // In a real implementation, these functions would interact with AI models
@@ -88,13 +89,69 @@ export async function processImages(
       console.error('Error storing receipt:', receiptError)
       // Continue without storing if there's an error
     }
+
+    // Get user preferences from profile table - specifically onboarding_data
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('onboarding_data')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError)
+    }
+
+    // Prepare user preferences for Claude AI from onboarding_data
+    const userPreferences = profile?.onboarding_data ? {
+      dietaryRestrictions: profile.onboarding_data.dietaryRestrictions || [],
+      allergies: profile.onboarding_data.allergies || [],
+      householdSize: profile.onboarding_data.householdSize || 1,
+      spiceTolerance: profile.onboarding_data.spiceTolerance || 3,
+      maxSpending: profile.onboarding_data.maxSpending || 15,
+      foodPreferences: profile.onboarding_data.foodPreferences || [],
+      cuisinePreferences: profile.onboarding_data.cuisinePreferences || [],
+      avoidIngredients: profile.onboarding_data.avoidIngredients || '',
+      hasChildren: profile.onboarding_data.hasChildren || false,
+      childrenAges: profile.onboarding_data.childrenAges || '',
+      specialDietary: profile.onboarding_data.specialDietary || ''
+    } : {}
+
+    // Generate meal plan using Claude AI with user preferences
+    console.log('🚀 Starting meal plan generation...')
+    console.log('👤 User preferences for meal planning:', JSON.stringify(userPreferences, null, 2))
     
-    // Store the receipt data in a database or session
-    // For this MVP, we'll just return success with the data
+    const mealPlans = await generateMealPlan(receiptData, userPreferences)
+    
+    console.log('🎉 Meal plan generation completed!')
+    console.log('📊 Generated', mealPlans.length, 'days of meal plans')
+    console.log('🍽️ First day sample:', JSON.stringify(mealPlans[0], null, 2))
+
+    // Store the generated meal plan in the existing meal_plans table
+    if (mealPlans.length > 0) {
+      console.log('💾 Storing meal plan in database...')
+      const { error: mealPlanError } = await supabase
+        .from('meal_plans')
+        .insert({
+          user_id: user.id,
+          receipt_id: receiptRecord?.id,
+          meal_plan: mealPlans, // Using the existing meal_plan JSONB field
+          created_at: new Date().toISOString()
+        })
+
+      if (mealPlanError) {
+        console.error('❌ Error storing meal plan:', mealPlanError)
+        // Continue without storing if there's an error
+      } else {
+        console.log('✅ Meal plan stored successfully in database')
+      }
+    }
+    
+    // Return success with the data
     return { 
       success: true, 
       receiptData,
-      receiptId: receiptRecord?.id
+      receiptId: receiptRecord?.id,
+      mealPlans
     }
   } catch (error) {
     console.error('Error processing receipt:', error)
@@ -226,5 +283,39 @@ export async function hasCompletedOnboarding() {
   } catch (error) {
     console.error('Error checking onboarding status:', error)
     return false
+  }
+}
+
+export async function getUserMealPlans() {
+  try {
+    const supabase = createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      throw new Error('User not authenticated')
+    }
+
+    const { data: mealPlans, error } = await supabase
+      .from('meal_plans')
+      .select(`
+        *,
+        receipts (
+          store_name,
+          total_amount,
+          receipt_date,
+          items
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw error
+    }
+
+    return mealPlans
+  } catch (error) {
+    console.error('Error fetching user meal plans:', error)
+    return []
   }
 } 

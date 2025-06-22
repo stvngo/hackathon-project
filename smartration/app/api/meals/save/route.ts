@@ -31,6 +31,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Meal already saved' }, { status: 409 })
     }
 
+    // Verify that the meal plan ID exists in either meal_plans or weekly_meal_plans
+    const { data: mealPlan } = await supabase
+      .from('meal_plans')
+      .select('id')
+      .eq('id', mealPlanId)
+      .single()
+
+    const { data: weeklyMealPlan } = await supabase
+      .from('weekly_meal_plans')
+      .select('id')
+      .eq('id', mealPlanId)
+      .single()
+
+    if (!mealPlan && !weeklyMealPlan) {
+      return NextResponse.json({ error: 'Invalid meal plan ID' }, { status: 400 })
+    }
+
     // Save the meal
     const { data: savedMeal, error } = await supabase
       .from('saved_meals')

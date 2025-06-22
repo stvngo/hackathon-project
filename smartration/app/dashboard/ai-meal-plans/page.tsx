@@ -257,11 +257,36 @@ export default function AIMealPlansPage() {
         console.log('📊 Weekly meal plan from database:', weeklyPlan)
         
         if (weeklyPlan && weeklyPlan.meal_plan && weeklyPlan.meal_plan.length > 0) {
-          console.log('✅ Found weekly meal plan with', weeklyPlan.meal_plan.length, 'meals')
-          setMealPlans(weeklyPlan.meal_plan)
+          console.log('✅ Found weekly meal plan with', weeklyPlan.meal_plan.length, 'meal plans')
+          
+          // Flatten all meal plans into individual days with proper labeling
+          const flattenedMeals: DayPlan[] = []
+          let globalDayCounter = 1
+          
+          weeklyPlan.meal_plan.forEach((mealPlan: any[], mealPlanIndex: number) => {
+            // Only process meal plans that actually contain meals
+            if (Array.isArray(mealPlan) && mealPlan.length > 0) {
+              console.log(`📋 Processing meal plan ${mealPlanIndex + 1} with ${mealPlan.length} days`)
+              mealPlan.forEach((dayPlan: any, dayIndex: number) => {
+                const mealPlanNumber = mealPlanIndex + 1
+                flattenedMeals.push({
+                  ...dayPlan,
+                  day: `Meal Plan ${mealPlanNumber} - Day ${globalDayCounter}`
+                })
+                globalDayCounter++
+              })
+            } else {
+              console.log(`⏭️ Skipping empty meal plan ${mealPlanIndex + 1}`)
+            }
+          })
+          
+          console.log('📊 Flattened meals from refresh:', flattenedMeals.map((meal, index) => ({ day: meal.day, index })))
+          
+          setMealPlans(flattenedMeals)
           setCurrentMealPlanId(weeklyPlan.id)
+          setCurrentDay(0)
           // Store in localStorage for future use
-          localStorage.setItem('currentMealPlans', JSON.stringify(weeklyPlan.meal_plan))
+          localStorage.setItem('currentMealPlans', JSON.stringify(flattenedMeals))
           localStorage.setItem('currentMealPlanId', weeklyPlan.id)
           setIsLoading(false)
           return // Exit early since we have the data
@@ -278,9 +303,42 @@ export default function AIMealPlansPage() {
           console.log('📊 Meal plans structure:', JSON.stringify(parsed, null, 2))
           
           if (Array.isArray(parsed)) {
-            setMealPlans(parsed)
+            // Handle both old format (flat array) and new format (array of arrays)
+            let organizedMeals: DayPlan[]
+            
+            if (parsed.length > 0 && Array.isArray(parsed[0])) {
+              // New format: array of meal plans (each meal plan is an array of days)
+              const flattenedMeals: DayPlan[] = []
+              let globalDayCounter = 1
+              
+              parsed.forEach((mealPlan: any[], mealPlanIndex: number) => {
+                // Only process meal plans that actually contain meals
+                if (Array.isArray(mealPlan) && mealPlan.length > 0) {
+                  console.log(`📋 Processing meal plan ${mealPlanIndex + 1} with ${mealPlan.length} days from URL`)
+                  mealPlan.forEach((dayPlan: any, dayIndex: number) => {
+                    const mealPlanNumber = mealPlanIndex + 1
+                    flattenedMeals.push({
+                      ...dayPlan,
+                      day: `Meal Plan ${mealPlanNumber} - Day ${globalDayCounter}`
+                    })
+                    globalDayCounter++
+                  })
+                } else {
+                  console.log(`⏭️ Skipping empty meal plan ${mealPlanIndex + 1} from URL`)
+                }
+              })
+              organizedMeals = flattenedMeals
+            } else {
+              // Old format: flat array of days
+              organizedMeals = parsed.map((mealPlan, index) => ({
+                ...mealPlan,
+                day: `Day ${index + 1}` // Ensure proper day labeling
+              }))
+            }
+            
+            setMealPlans(organizedMeals)
             // Store in localStorage as backup
-            localStorage.setItem('currentMealPlans', JSON.stringify(parsed))
+            localStorage.setItem('currentMealPlans', JSON.stringify(organizedMeals))
           } else {
             console.error('❌ Meal plans is not an array:', parsed)
             setError('Invalid meal plan format')
@@ -300,7 +358,37 @@ export default function AIMealPlansPage() {
             
             // Validate that parsed is an array
             if (Array.isArray(parsed)) {
-              setMealPlans(parsed)
+              // Handle both old format (flat array) and new format (array of arrays)
+              let organizedMeals: DayPlan[]
+              
+              if (parsed.length > 0 && Array.isArray(parsed[0])) {
+                // New format: array of meal plans (each meal plan is an array of days)
+                const flattenedMeals: DayPlan[] = []
+                parsed.forEach((mealPlan: any[], mealPlanIndex: number) => {
+                  // Only process meal plans that actually contain meals
+                  if (Array.isArray(mealPlan) && mealPlan.length > 0) {
+                    console.log(`📋 Processing meal plan ${mealPlanIndex + 1} with ${mealPlan.length} days from localStorage`)
+                    mealPlan.forEach((dayPlan: any, dayIndex: number) => {
+                      const mealPlanNumber = mealPlanIndex + 1
+                      flattenedMeals.push({
+                        ...dayPlan,
+                        day: `Meal Plan ${mealPlanNumber} - Day ${dayIndex + 1}`
+                      })
+                    })
+                  } else {
+                    console.log(`⏭️ Skipping empty meal plan ${mealPlanIndex + 1} from localStorage`)
+                  }
+                })
+                organizedMeals = flattenedMeals
+              } else {
+                // Old format: flat array of days
+                organizedMeals = parsed.map((mealPlan, index) => ({
+                  ...mealPlan,
+                  day: `Day ${index + 1}` // Ensure proper day labeling
+                }))
+              }
+              
+              setMealPlans(organizedMeals)
             } else {
               console.error('❌ Meal plans from localStorage is not an array:', parsed)
               setError('Invalid meal plan format')
@@ -614,6 +702,7 @@ export default function AIMealPlansPage() {
   console.log('🎯 Current day:', currentDay)
   console.log('📋 Current plan:', currentPlan)
   console.log('🍽️ Current plan structure:', JSON.stringify(currentPlan, null, 2))
+  console.log('📅 All meal plans:', mealPlans.map((plan, index) => ({ day: plan.day, index })))
   
   // Validate current plan structure
   const isValidPlan = currentPlan && 
@@ -660,11 +749,34 @@ export default function AIMealPlansPage() {
       console.log('📊 Weekly meal plan:', weeklyPlan)
       
       if (weeklyPlan && weeklyPlan.meal_plan && weeklyPlan.meal_plan.length > 0) {
-        setMealPlans(weeklyPlan.meal_plan)
+        // Flatten all meal plans into individual days with proper labeling
+        const flattenedMeals: DayPlan[] = []
+        let globalDayCounter = 1
+        
+        weeklyPlan.meal_plan.forEach((mealPlan: any[], mealPlanIndex: number) => {
+          // Only process meal plans that actually contain meals
+          if (Array.isArray(mealPlan) && mealPlan.length > 0) {
+            console.log(`📋 Processing meal plan ${mealPlanIndex + 1} with ${mealPlan.length} days`)
+            mealPlan.forEach((dayPlan: any, dayIndex: number) => {
+              const mealPlanNumber = mealPlanIndex + 1
+              flattenedMeals.push({
+                ...dayPlan,
+                day: `Meal Plan ${mealPlanNumber} - Day ${globalDayCounter}`
+              })
+              globalDayCounter++
+            })
+          } else {
+            console.log(`⏭️ Skipping empty meal plan ${mealPlanIndex + 1}`)
+          }
+        })
+        
+        console.log('📊 Flattened meals from refresh:', flattenedMeals.map((meal, index) => ({ day: meal.day, index })))
+        
+        setMealPlans(flattenedMeals)
         setCurrentMealPlanId(weeklyPlan.id)
         setCurrentDay(0)
         // Store in localStorage for future use
-        localStorage.setItem('currentMealPlans', JSON.stringify(weeklyPlan.meal_plan))
+        localStorage.setItem('currentMealPlans', JSON.stringify(flattenedMeals))
         localStorage.setItem('currentMealPlanId', weeklyPlan.id)
       } else {
         setError('No meal plans found for this week')

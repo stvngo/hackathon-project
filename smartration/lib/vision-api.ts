@@ -79,7 +79,7 @@ function reconstructLinesFromAnnotations(annotations: any[]): string {
   const individualTexts = annotations.slice(1);
   
   // Group texts by their Y-coordinate with improved tolerance
-  const tolerance = 15; // Increased tolerance for better line grouping
+  const tolerance = 12; // Slightly reduced tolerance for better line separation
   const lines: { y: number; texts: { text: string; x: number; width: number }[] }[] = [];
   
   individualTexts.forEach(annotation => {
@@ -116,10 +116,22 @@ function reconstructLinesFromAnnotations(annotations: any[]): string {
     line.texts.sort((a, b) => a.x - b.x);
   });
   
-  // Reconstruct text with better spacing
+  // Reconstruct text with better spacing and handle special cases
   const reconstructedLines = lines.map(line => {
     const lineText = line.texts.map(t => t.text).join(' ');
-    return lineText.trim();
+    
+    // Clean up common OCR artifacts
+    let cleanedText = lineText.trim();
+    
+    // Handle repeated text patterns (common in OCR)
+    cleanedText = cleanedText.replace(/(\w+)\s+\1/g, '$1'); // Remove immediate repeats
+    cleanedText = cleanedText.replace(/(\w+\s+\w+)\s+\1/g, '$1'); // Remove phrase repeats
+    
+    // Handle common OCR issues
+    cleanedText = cleanedText.replace(/\s+/g, ' '); // Normalize spaces
+    cleanedText = cleanedText.replace(/[^\w\s\.\$\d\-\/\@\*\+]/g, ''); // Keep only relevant characters
+    
+    return cleanedText;
   }).filter(line => line.length > 0);
   
   return reconstructedLines.join('\n');
@@ -195,13 +207,14 @@ function parseReceiptText(text: string): ReceiptData {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     
-    // Skip lines that are likely totals, headers, or metadata
+    console.log(`🔍 Processing line ${i + 1}: "${line}"`)
+    
+    // Skip lines that are definitely not food items
     if (line.toLowerCase().includes('total') || 
         line.toLowerCase().includes('tax') || 
         line.toLowerCase().includes('payment') ||
         line.toLowerCase().includes('change') ||
         line.toLowerCase().includes('credit') ||
-        line.toLowerCase().includes('saved') ||
         line.toLowerCase().includes('subtotal') ||
         line.toLowerCase().includes('grand total') ||
         line.toLowerCase().includes('order total') ||
@@ -216,19 +229,27 @@ function parseReceiptText(text: string): ReceiptData {
         line.toLowerCase().includes('term') ||
         line.toLowerCase().includes('eps') ||
         line.toLowerCase().includes('item') ||
+        line.toLowerCase().includes('acct') ||
+        line.toLowerCase().includes('apprvl') ||
+        line.toLowerCase().includes('code') ||
+        line.toLowerCase().includes('trx') ||
+        line.toLowerCase().includes('thanks') ||
+        line.toLowerCase().includes('life is') ||
+        line.toLowerCase().includes('1401') ||
+        line.toLowerCase().includes('906-') ||
+        line.toLowerCase().includes('number of items') ||
+        line.toLowerCase().includes('you that is saved') ||
+        line.toLowerCase().includes('5 %') ||
         line === 'PUB' ||
         line === 'F' ||
         line === '1 @ 2 FOR' ||
         line === '3 @' ||
         line.length < 3) {
+      console.log(`⏭️ Skipping line ${i + 1} (filtered out)`)
       continue;
     }
     
     // Improved price detection patterns
-    // Pattern 1: Price at end with optional "F" suffix: "ITEM NAME 12.99 F" or "ITEM NAME $12.99 F"
-    // Pattern 2: Price at end without "F": "ITEM NAME 12.99" or "ITEM NAME $12.99"
-    // Pattern 3: Price with quantity: "2 @ 6.49/EA 12.98 F"
-    
     let priceMatch = null;
     let itemName = '';
     let price = 0;
@@ -254,6 +275,7 @@ function parseReceiptText(text: string): ReceiptData {
     for (const pattern of pricePatterns) {
       priceMatch = processedLine.match(pattern);
       if (priceMatch) {
+        console.log(`💰 Price match found: "${priceMatch[0]}" in line: "${processedLine}"`)
         const matchText = priceMatch[0];
         
         // Handle quantity patterns
@@ -271,6 +293,8 @@ function parseReceiptText(text: string): ReceiptData {
         const priceIndex = processedLine.lastIndexOf(matchText);
         itemName = processedLine.substring(0, priceIndex).trim();
         
+        console.log(`📝 Extracted item name: "${itemName}" with price: $${price}`)
+        
         // Clean up item name
         itemName = itemName.replace(/\d+\s*@\s*\$?\d+\.\d+\/\s*\w+/, '').trim(); // Remove "2 @ 6.49/EA"
         itemName = itemName.replace(/\d+\s*@\s*\$?\d+\.\d+/, '').trim(); // Remove "2 @ 6.49"
@@ -282,6 +306,7 @@ function parseReceiptText(text: string): ReceiptData {
         itemName = itemName.replace(/\s*\$/, '').trim(); // Remove any "$" in the name
         itemName = itemName.replace(/^\s+|\s+$/g, '').trim(); // Remove extra whitespace
         
+        console.log(`🧹 Cleaned item name: "${itemName}"`)
         break;
       }
     }
@@ -301,7 +326,18 @@ function parseReceiptText(text: string): ReceiptData {
       if (itemName.toLowerCase().includes('purchase') || 
           itemName.toLowerCase().includes('total') ||
           itemName.toLowerCase().includes('subtotal') ||
-          itemName.toLowerCase().includes('payment')) {
+          itemName.toLowerCase().includes('payment') ||
+          itemName.toLowerCase().includes('acct') ||
+          itemName.toLowerCase().includes('apprvl') ||
+          itemName.toLowerCase().includes('code') ||
+          itemName.toLowerCase().includes('trx') ||
+          itemName.toLowerCase().includes('thanks') ||
+          itemName.toLowerCase().includes('life is') ||
+          itemName.toLowerCase().includes('1401') ||
+          itemName.toLowerCase().includes('906-') ||
+          itemName.toLowerCase().includes('number of items') ||
+          itemName.toLowerCase().includes('you that is saved') ||
+          itemName.toLowerCase().includes('5 %')) {
         if (price > total) {
           total = price;
           console.log('💰 Found total:', total)
@@ -309,12 +345,55 @@ function parseReceiptText(text: string): ReceiptData {
         continue;
       }
       
-      items.push({
-        name: itemName,
-        price: price,
-        quantity: quantity
-      });
-      console.log('🛒 Found item:', itemName, 'at $', price, 'qty:', quantity)
+      // Special handling for this receipt format
+      // Check if this looks like a food item
+      const isFoodItem = 
+        itemName.toLowerCase().includes('water') ||
+        itemName.toLowerCase().includes('lobster') ||
+        itemName.toLowerCase().includes('steak') ||
+        itemName.toLowerCase().includes('meat') ||
+        itemName.toLowerCase().includes('porterhouse') ||
+        itemName.toLowerCase().includes('cold') ||
+        itemName.toLowerCase().includes('diet') ||
+        itemName.toLowerCase().includes('mt dew') ||
+        itemName.toLowerCase().includes('pack') ||
+        itemName.toLowerCase().includes('grocery') ||
+        itemName.toLowerCase().includes('savings') ||
+        itemName.toLowerCase().includes('deposit') ||
+        (itemName.length >= 3 && 
+         !itemName.match(/^\d+$/) && // Not just numbers
+         !itemName.match(/^[^a-zA-Z]*$/) && // Contains at least some letters
+         itemName.length < 50); // Not too long
+      
+      if (isFoodItem) {
+        // Clean up the item name further
+        let cleanItemName = itemName;
+        
+        // Remove common prefixes/suffixes that aren't part of the food name
+        cleanItemName = cleanItemName.replace(/^\*?\s*/, ''); // Remove leading asterisk
+        cleanItemName = cleanItemName.replace(/\s*STORE\s*$/i, ''); // Remove "STORE" suffix
+        cleanItemName = cleanItemName.replace(/\s*SAVINGS\s*$/i, ''); // Remove "SAVINGS" suffix
+        cleanItemName = cleanItemName.replace(/\s*DEPOSIT\s*$/i, ''); // Remove "DEPOSIT" suffix
+        cleanItemName = cleanItemName.replace(/\s*T\s*$/i, ''); // Remove "T" suffix (likely weight indicator)
+        cleanItemName = cleanItemName.replace(/\s*I\s*$/i, ''); // Remove "I" suffix (OCR artifact)
+        
+        // Handle repeated words (common OCR issue)
+        cleanItemName = cleanItemName.replace(/(\w+)\s+\1/g, '$1'); // Remove immediate repeats
+        cleanItemName = cleanItemName.replace(/(\w+\s+\w+)\s+\1/g, '$1'); // Remove phrase repeats
+        
+        // Normalize spaces
+        cleanItemName = cleanItemName.replace(/\s+/g, ' ').trim();
+        
+        // Only add if we have a meaningful name
+        if (cleanItemName.length >= 2) {
+          items.push({
+            name: cleanItemName,
+            price: price,
+            quantity: quantity
+          });
+          console.log('🛒 Found item:', cleanItemName, 'at $', price, 'qty:', quantity)
+        }
+      }
     }
   }
 

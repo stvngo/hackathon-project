@@ -443,15 +443,45 @@ export async function addMealsToWeeklyPlan(newMeals: any[], weekStart: string) {
       throw fetchError
     }
 
-    // Merge new meals with existing meals
-    const existingMeals = currentPlan.meal_plan || []
-    const mergedMeals = [...existingMeals, ...newMeals]
+    // Get existing meal plans and organize them
+    const existingMealPlans = currentPlan.meal_plan || []
+    
+    // Count how many meal plans we already have
+    const existingMealPlanCount = existingMealPlans.length
+    
+    console.log('📅 Adding meal plan to weekly plan:')
+    console.log('- Existing meal plans count:', existingMealPlanCount)
+    console.log('- New meals count:', newMeals.length)
+    console.log('- Existing meal plans:', existingMealPlans.map((mealPlan: any, index: number) => ({ 
+      mealPlanNumber: index + 1, 
+      days: Array.isArray(mealPlan) ? mealPlan.length : 0 
+    })))
+    
+    // Organize new meals as a complete meal plan with proper day labels
+    const organizedNewMealPlan = newMeals.map((mealPlan, index) => {
+      const dayNumber = index + 1
+      const organizedMeal = {
+        ...mealPlan,
+        day: `Day ${dayNumber}`
+      }
+      console.log(`- Organizing meal ${index + 1} as Day ${dayNumber}:`, organizedMeal.day)
+      return organizedMeal
+    })
+
+    // Add the new meal plan to the existing meal plans
+    const updatedMealPlans = [...existingMealPlans, organizedNewMealPlan]
+    
+    console.log('📊 Final meal plans structure:', updatedMealPlans.map((mealPlan: any, index: number) => ({ 
+      mealPlanNumber: index + 1, 
+      days: Array.isArray(mealPlan) ? mealPlan.length : 0,
+      dayLabels: Array.isArray(mealPlan) ? mealPlan.map((day: any) => day.day) : []
+    })))
 
     // Update the weekly meal plan
     const { error: updateError } = await supabase
       .from('weekly_meal_plans')
       .update({
-        meal_plan: mergedMeals,
+        meal_plan: updatedMealPlans,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', user.id)
@@ -461,8 +491,8 @@ export async function addMealsToWeeklyPlan(newMeals: any[], weekStart: string) {
       throw updateError
     }
 
-    console.log('✅ Added', newMeals.length, 'new meals to weekly plan')
-    return mergedMeals
+    console.log('✅ Added Meal Plan', (existingMealPlanCount + 1), 'with', newMeals.length, 'days to weekly plan')
+    return updatedMealPlans
   } catch (error) {
     console.error('Error adding meals to weekly plan:', error)
     throw error

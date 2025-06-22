@@ -21,6 +21,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Rating must be between 1 and 5' }, { status: 400 })
     }
 
+    // Verify that the meal plan ID exists in either meal_plans or weekly_meal_plans
+    const { data: mealPlan } = await supabase
+      .from('meal_plans')
+      .select('id')
+      .eq('id', mealPlanId)
+      .single()
+
+    const { data: weeklyMealPlan } = await supabase
+      .from('weekly_meal_plans')
+      .select('id')
+      .eq('id', mealPlanId)
+      .single()
+
+    if (!mealPlan && !weeklyMealPlan) {
+      return NextResponse.json({ error: 'Invalid meal plan ID' }, { status: 400 })
+    }
+
     // Check if user already rated this meal
     const { data: existingRating } = await supabase
       .from('meal_ratings')

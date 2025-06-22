@@ -83,7 +83,7 @@ export async function generateMealPlan(
 
     // Parse the response to extract meal plans
     const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
-    const mealPlans = parseMealPlanResponse(responseText)
+    const mealPlans = parseMealPlanResponse(responseText, receiptData)
     
     return mealPlans;
   } catch (error) {
@@ -145,21 +145,23 @@ Max Daily Budget: $${userPreferences.maxSpending || 15}
 
 REQUIREMENTS:
 1. Use ONLY the ingredients listed above - be creative with substitutions and combinations
-2. Create as many meals within reason for an average human being to consume 
-3. Ensure meals are nutritious, balanced, and sustainable
-4. Consider food preservation and storage to make ingredients last
-5. Include detailed cooking instructions
-6. Provide nutritional information (protein, carbs, fat, calories)
-7. Calculate cost per meal using the provided prices
-8. Include prep time for each meal
-9. Make meals that can be prepared with basic cooking equipment
-10. Consider leftovers and meal prep strategies
-11. Respect all dietary restrictions and allergies
-12. Incorporate user's food and cuisine preferences when possible
-13. Avoid any ingredients the user has specified they don't want
-14. If cooking for children, make meals kid-friendly and appropriate for their ages
-15. Consider any special dietary needs or medical conditions
-16. if its not a commonly eaten meal or a meal that is reasonable for human consumption, then don't include it. 
+2. Create complete daily meal plans with breakfast, lunch, and dinner for each day
+3. Each day MUST include all three meals: breakfast, lunch, and dinner
+4. Ensure meals are nutritious, balanced, and sustainable
+5. Consider food preservation and storage to make ingredients last
+6. Include detailed cooking instructions
+7. Provide nutritional information (protein, carbs, fat, calories)
+8. Calculate cost per meal using the provided prices
+9. Include prep time for each meal
+10. Make meals that can be prepared with basic cooking equipment
+11. Consider leftovers and meal prep strategies
+12. Respect all dietary restrictions and allergies
+13. Incorporate user's food and cuisine preferences when possible
+14. Avoid any ingredients the user has specified they don't want
+15. If cooking for children, make meals kid-friendly and appropriate for their ages
+16. Consider any special dietary needs or medical conditions
+17. If it's not a commonly eaten meal or a meal that is reasonable for human consumption, then don't include it
+18. Create as many complete days as possible with the available ingredients
 
 FORMAT YOUR RESPONSE AS JSON:
 {
@@ -167,19 +169,42 @@ FORMAT YOUR RESPONSE AS JSON:
     {
       "day": "Day 1",
       "breakfast": {
-        "name": "Meal Name",
+        "name": "Breakfast Meal Name",
         "ingredients": ["ingredient1", "ingredient2"],
         "instructions": "Step-by-step cooking instructions",
         "nutritionalInfo": "Protein: Xg, Carbs: Xg, Fat: Xg, Calories: X",
         "cost": 2.50,
         "prepTime": 15
       },
+      "lunch": {
+        "name": "Lunch Meal Name",
+        "ingredients": ["ingredient1", "ingredient2"],
+        "instructions": "Step-by-step cooking instructions",
+        "nutritionalInfo": "Protein: Xg, Carbs: Xg, Fat: Xg, Calories: X",
+        "cost": 3.50,
+        "prepTime": 20
+      },
+      "dinner": {
+        "name": "Dinner Meal Name",
+        "ingredients": ["ingredient1", "ingredient2"],
+        "instructions": "Step-by-step cooking instructions",
+        "nutritionalInfo": "Protein: Xg, Carbs: Xg, Fat: Xg, Calories: X",
+        "cost": 4.50,
+        "prepTime": 25
+      },
+      "totalDailyCost": 10.50
+    },
+    {
+      "day": "Day 2",
+      "breakfast": { ... },
       "lunch": { ... },
       "dinner": { ... },
-      "totalDailyCost": 8.50
+      "totalDailyCost": 9.75
     }
   ]
 }
+
+IMPORTANT: Each day MUST have breakfast, lunch, and dinner. Do not create partial days or single meals. Create complete daily meal plans.
 
 Focus on creating meals that are:
 - Nutritious and balanced
@@ -193,55 +218,64 @@ Focus on creating meals that are:
 Be creative with ingredient combinations and cooking methods to maximize the use of available ingredients while respecting all user preferences.`;
 }
 
-function parseMealPlanResponse(response: string): MealPlan[] {
+function parseMealPlanResponse(response: string, receiptData?: ReceiptData): MealPlan[] {
   try {
+    console.log('🔍 Claude AI response:', response.substring(0, 500) + '...')
+    
     // Extract JSON from the response
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
+      console.error('❌ No JSON pattern found in Claude response')
       throw new Error('No JSON found in response');
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
     const mealPlans = parsed.mealPlans || [];
     
+    console.log('✅ Successfully parsed meal plans:', mealPlans.length)
     return mealPlans;
   } catch (error) {
     console.error('❌ Error parsing Claude response:', error);
+    console.error('❌ Full response:', response);
     // Return a fallback meal plan if parsing fails
-    return generateFallbackMealPlan();
+    return generateFallbackMealPlan(receiptData);
   }
 }
 
-function generateFallbackMealPlan(): MealPlan[] {
+function generateFallbackMealPlan(receiptData?: ReceiptData): MealPlan[] {
   // Fallback meal plan if Claude fails
+  const items = receiptData?.items || []
+  const availableIngredients = items.map(item => item.name).slice(0, 5) // Use first 5 items
+  
   return [
     {
       day: "Day 1",
       breakfast: {
         name: "Simple Breakfast",
-        ingredients: ["Bread", "Eggs", "Butter"],
-        instructions: "Toast bread and fry eggs. Serve with butter.",
+        ingredients: availableIngredients.length > 0 ? [availableIngredients[0]] : ["Bread", "Eggs"],
+        instructions: "Prepare a simple breakfast using available ingredients.",
         nutritionalInfo: "Protein: 12g, Carbs: 15g, Fat: 8g, Calories: 200",
-        cost: 2.00,
+        cost: items.length > 0 ? Math.min(items[0].price, 3.00) : 2.00,
         prepTime: 10
       },
       lunch: {
         name: "Basic Lunch",
-        ingredients: ["Bread", "Cheese", "Vegetables"],
-        instructions: "Make a sandwich with cheese and vegetables.",
+        ingredients: availableIngredients.length > 1 ? [availableIngredients[1]] : ["Bread", "Cheese"],
+        instructions: "Make a simple lunch using available ingredients.",
         nutritionalInfo: "Protein: 15g, Carbs: 25g, Fat: 10g, Calories: 300",
-        cost: 3.00,
+        cost: items.length > 1 ? Math.min(items[1].price, 4.00) : 3.00,
         prepTime: 5
       },
       dinner: {
         name: "Simple Dinner",
-        ingredients: ["Pasta", "Tomato sauce", "Cheese"],
-        instructions: "Cook pasta, add sauce and cheese.",
+        ingredients: availableIngredients.length > 2 ? [availableIngredients[2]] : ["Pasta", "Sauce"],
+        instructions: "Prepare a simple dinner using available ingredients.",
         nutritionalInfo: "Protein: 18g, Carbs: 45g, Fat: 12g, Calories: 400",
-        cost: 4.00,
+        cost: items.length > 2 ? Math.min(items[2].price, 5.00) : 4.00,
         prepTime: 20
       },
-      totalDailyCost: 9.00
+      totalDailyCost: items.length > 0 ? 
+        Math.min(items.reduce((sum, item) => sum + item.price, 0), 10.00) : 9.00
     }
   ];
 }

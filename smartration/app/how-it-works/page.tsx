@@ -134,7 +134,7 @@ export default function HowItWorksPage() {
               <Card className="overflow-hidden">
                 <div className="aspect-video bg-gray-100 flex items-center justify-center">
                   <img
-                    src="https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=200&fit=crop&crop=center"
+                    src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=200&fit=crop&crop=center"
                     alt="Delicious home-cooked meal with recipe ingredients"
                     className="object-cover w-full h-full"
                   />
@@ -182,7 +182,7 @@ export default function HowItWorksPage() {
               <Card className="overflow-hidden">
                 <div className="aspect-video bg-gray-100 flex items-center justify-center">
                   <img 
-                    src="https://images.unsplash.com/photo-1547592180-85f173990888?w=400&h=200&fit=crop&crop=center" 
+                    src="https://images.unsplash.com/photo-1543353071-873f17a7a088?w=400&h=200&fit=crop&crop=center" 
                     alt="Weekly meal plan with organized recipes" 
                     className="object-cover w-full h-full" 
                   />

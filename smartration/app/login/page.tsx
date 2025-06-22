@@ -33,9 +33,9 @@ export default function LoginPage() {
         console.error('Sign in error:', error)
         setError(error.message)
       } else {
-        console.log('Sign in successful, redirecting to upload...')
-        // Just redirect to upload, middleware will handle the rest
-        router.push('/upload')
+        console.log('Sign in successful, redirecting to dashboard...')
+        // Redirect to dashboard instead of upload
+        router.push('/dashboard')
       }
     } catch (err) {
       console.error('Unexpected error:', err)
@@ -46,35 +46,42 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-green-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <Link href="/" className="inline-flex items-center text-green-600 hover:text-green-700 mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Home
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center">
+          <Link href="/" className="flex items-center gap-2">
+            <ArrowLeft className="h-5 w-5 text-gray-400" />
+            <span className="text-sm text-gray-500">Back to home</span>
           </Link>
+        </div>
+        <div className="text-center mt-4">
           <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
           <p className="mt-2 text-sm text-gray-600">
             Sign in to your SmartRation account
           </p>
         </div>
+      </div>
 
-        <Card className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <Card className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <Label htmlFor="email" className="flex items-center">
                 <Mail className="h-4 w-4 mr-2" />
-                Email Address
+                Email address
               </Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-                className="mt-1"
-              />
+              <div className="mt-1">
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                />
+              </div>
             </div>
 
             <div>
@@ -121,19 +128,23 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 space-y-4 text-center">
-            <div>
-              <Link href="/forgot-password" className="text-sm text-green-600 hover:text-green-700">
-                Forgot your password?
-              </Link>
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
-                <Link href="/signup" className="font-medium text-green-600 hover:text-green-700">
-                  Sign up
-                </Link>
-              </p>
+
+            <div className="mt-6">
+              <Link
+                href="/signup"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-green-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                Create new account
+              </Link>
             </div>
           </div>
         </Card>

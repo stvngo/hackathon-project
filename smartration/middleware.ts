@@ -82,10 +82,10 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(redirectUrl)
         }
       } else {
-        // Fully set up users - redirect away from auth pages
+        // Fully set up users - redirect away from auth pages to dashboard
         if (['/login', '/signup', '/verify-email', '/onboarding'].includes(request.nextUrl.pathname)) {
           const redirectUrl = request.nextUrl.clone()
-          redirectUrl.pathname = '/upload'
+          redirectUrl.pathname = '/dashboard'
           return NextResponse.redirect(redirectUrl)
         }
       }

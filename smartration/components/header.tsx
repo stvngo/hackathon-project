@@ -17,31 +17,31 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto flex h-16 items-center px-4 sm:px-6 lg:px-8">
+      <div className="flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
         {user ? (
-          <div className="flex items-center gap-2">
-            <Utensils className="h-6 w-6 text-green-600" />
-            <span className="text-xl font-bold">SmartRation</span>
+          <div className="flex items-center gap-3">
+            <Utensils className="h-7 w-7 text-green-600" />
+            <span className="text-2xl font-bold">SmartRation</span>
           </div>
         ) : (
-          <Link href="/" className="flex items-center gap-2">
-            <Utensils className="h-6 w-6 text-green-600" />
-            <span className="text-xl font-bold">SmartRation</span>
-          </Link>
+        <Link href="/" className="flex items-center gap-3">
+          <Utensils className="h-7 w-7 text-green-600" />
+          <span className="text-2xl font-bold">SmartRation</span>
+        </Link>
         )}
         
-        <nav className="ml-auto flex gap-4 sm:gap-6 items-center">
+        <nav className="flex gap-4 sm:gap-6 items-center">
           {!user && (
             <>
-              <Link href="/" className="text-sm font-medium">
-                Home
-              </Link>
-              <Link href="/about" className="text-sm font-medium">
-                About
-              </Link>
-              <Link href="/contact" className="text-sm font-medium">
-                Contact
-              </Link>
+          <Link href="/" className="text-sm font-medium">
+            Home
+          </Link>
+          <Link href="/about" className="text-sm font-medium">
+            About
+          </Link>
+          <Link href="/contact" className="text-sm font-medium">
+            Contact
+          </Link>
             </>
           )}
           
@@ -52,16 +52,16 @@ export default function Header() {
                   <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
                     <User className="h-4 w-4 text-white" />
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSignOut}
-                    className="flex items-center gap-1"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign Out
-                  </Button>
-                </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSignOut}
+                      className="flex items-center gap-1"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </Button>
+                  </div>
               ) : (
                 <>
                   <Link href="/login" className="text-sm font-medium">

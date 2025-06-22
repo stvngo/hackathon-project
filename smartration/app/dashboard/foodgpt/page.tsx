@@ -54,39 +54,53 @@ export default function FoodGPTPage() {
     setInput("")
     setIsLoading(true)
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      // Prepare conversation history for context
+      const conversationHistory = messages
+        .filter(msg => msg.role !== "user" || msg.id !== "1") // Exclude the initial greeting
+        .map(msg => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content
+        }))
+
+      // Call the FoodGPT API
+      const response = await fetch('/api/foodgpt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage.content,
+          conversationHistory
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get response')
+      }
+
+      const data = await response.json()
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: generateMockResponse(userMessage.content),
+        content: data.response,
         role: "assistant",
         timestamp: new Date(),
       }
+
       setMessages((prev) => [...prev, aiResponse])
+    } catch (error) {
+      console.error('Error getting FoodGPT response:', error)
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment! 🤖",
+        role: "assistant",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorResponse])
+    } finally {
       setIsLoading(false)
-    }, 1500)
-  }
-
-  const generateMockResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase()
-
-    if (input.includes("recipe") || input.includes("cook")) {
-      return "I'd love to help you with a recipe! Based on your recent meal plans, I see you enjoy quick and healthy options. Here's a simple recipe idea:\n\n**15-Minute Veggie Stir-Fry:**\n• Heat 2 tbsp oil in a wok\n• Add your favorite vegetables (bell peppers, broccoli, carrots)\n• Stir-fry for 5-7 minutes\n• Add soy sauce and garlic\n• Serve over rice or noodles\n\nWould you like me to suggest variations based on what's in your fridge?"
     }
-
-    if (input.includes("budget") || input.includes("cheap") || input.includes("save")) {
-      return "Great question about budget-friendly cooking! Here are my top money-saving tips:\n\n💰 **Smart Shopping:**\n• Buy seasonal produce\n• Use store brands for basics\n• Plan meals around sales\n\n🍳 **Cooking Tips:**\n• Batch cook grains and proteins\n• Use cheaper cuts of meat in slow cooker\n• Make your own sauces and dressings\n\nBased on your meal history, you're already saving about $12-15 per week! Want specific recipe ideas for under $3 per serving?"
-    }
-
-    if (input.includes("healthy") || input.includes("nutrition")) {
-      return "I'm happy to help with healthy eating! Looking at your meal plans, you're doing well with protein variety. Here are some nutritional tips:\n\n🥗 **Balance Your Plate:**\n• 1/2 vegetables and fruits\n• 1/4 lean protein\n• 1/4 whole grains\n\n💪 **Quick Wins:**\n• Add spinach to smoothies\n• Swap white rice for quinoa\n• Include nuts/seeds for healthy fats\n\nWould you like me to analyze the nutritional balance of your current meal plan?"
-    }
-
-    if (input.includes("meal plan") || input.includes("planning")) {
-      return "Meal planning is one of my favorite topics! 📅 Here's how to make it easier:\n\n**Weekly Planning Strategy:**\n1. Check your calendar for busy days\n2. Plan 2-3 base proteins for the week\n3. Prep ingredients on Sunday\n4. Keep 2-3 backup quick meals ready\n\n**Pro Tips:**\n• Theme nights (Meatless Monday, Taco Tuesday)\n• Double recipes for leftovers\n• Prep sauces and marinades in advance\n\nWant me to suggest a meal plan based on your recent grocery receipts?"
-    }
-
-    return "That's a great question! I'm here to help with all things food-related. Whether you need recipe ideas, cooking tips, meal planning advice, or nutritional guidance, I've got you covered. Could you tell me a bit more about what you're looking for? For example:\n\n• Are you looking for a specific type of recipe?\n• Do you have dietary restrictions I should know about?\n• Are you trying to achieve a particular goal (save money, eat healthier, save time)?\n\nI'm here to make your food journey easier and more delicious! 🍽️"
   }
 
   const suggestedQuestions = [
@@ -198,15 +212,11 @@ export default function FoodGPTPage() {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask me anything about food, recipes, or meal planning..."
-                className="flex-1 border-gray-300 focus:border-green-500 focus:ring-green-500"
+                placeholder="Ask me anything about food, recipes, or cooking..."
+                className="flex-1"
                 disabled={isLoading}
               />
-              <Button
-                type="submit"
-                disabled={!input.trim() || isLoading}
-                className="bg-green-500 hover:bg-green-600 text-white shadow-sm"
-              >
+              <Button type="submit" disabled={isLoading || !input.trim()}>
                 <Send className="h-4 w-4" />
               </Button>
             </form>

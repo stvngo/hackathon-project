@@ -244,4 +244,69 @@ function generateFallbackMealPlan(): MealPlan[] {
       totalDailyCost: 9.00
     }
   ];
+}
+
+export async function generateFoodGPTResponse(
+  userMessage: string,
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
+): Promise<string> {
+  try {
+    // Create a comprehensive prompt for FoodGPT
+    const prompt = createFoodGPTPrompt(userMessage, conversationHistory)
+
+    const message = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 2000,
+      temperature: 0.8,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    })
+
+    const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+    return responseText;
+  } catch (error) {
+    console.error('❌ Error generating FoodGPT response:', error)
+    throw new Error('Failed to generate response')
+  }
+}
+
+function createFoodGPTPrompt(
+  userMessage: string, 
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>
+): string {
+  const historyContext = conversationHistory.length > 0 
+    ? `\n\nCONVERSATION HISTORY:\n${conversationHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}`
+    : '';
+
+  return `You are FoodGPT, a friendly and knowledgeable food assistant. You help users with recipes, meal planning, cooking tips, dietary advice, and all things food-related. You should be:
+
+1. **Helpful and Informative**: Provide practical, actionable advice
+2. **Friendly and Engaging**: Use a warm, conversational tone with food emojis when appropriate
+3. **Personalized**: Consider the user's context and previous questions
+4. **Safe**: Always mention food safety and allergy considerations when relevant
+5. **Creative**: Suggest interesting recipe variations and cooking techniques
+6. **Budget-Conscious**: Include cost-saving tips and budget-friendly alternatives
+7. **Health-Focused**: Provide nutritional insights and healthy eating tips
+
+Your expertise includes:
+- Recipe development and modification
+- Meal planning and prep strategies
+- Cooking techniques and tips
+- Dietary restrictions and allergies
+- Budget-friendly cooking
+- Food storage and preservation
+- Nutritional guidance
+- Kitchen equipment recommendations
+- Time-saving cooking methods
+- Family-friendly meal ideas
+
+${historyContext}
+
+USER'S QUESTION: ${userMessage}
+
+Please provide a helpful, engaging response that addresses their question. If they're asking about recipes, include ingredients, instructions, and tips. If they're asking about meal planning, provide actionable strategies. If they're asking about cooking techniques, explain the process clearly. Always be encouraging and make cooking feel accessible and enjoyable!`;
 } 

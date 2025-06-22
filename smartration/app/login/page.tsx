@@ -60,7 +60,7 @@ export default function LoginPage() {
             Sign in to your SmartRation account
           </p>
         </div>
-      </div>
+        </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <Card className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
@@ -71,16 +71,16 @@ export default function LoginPage() {
                 Email address
               </Label>
               <div className="mt-1">
-                <Input
-                  id="email"
+              <Input
+                id="email"
                   name="email"
-                  type="email"
+                type="email"
                   autoComplete="email"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                />
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+              />
               </div>
             </div>
 

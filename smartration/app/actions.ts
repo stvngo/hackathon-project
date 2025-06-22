@@ -102,7 +102,7 @@ export async function processImages(
     } else {
       console.log('✅ Receipt stored in database with ID:', receiptRecord.id)
     }
-
+    
     // Get user preferences from profile table - specifically onboarding_data
     console.log('👤 Fetching user preferences...')
     const { data: profile, error: profileError } = await supabase
@@ -137,10 +137,17 @@ export async function processImages(
     const mealPlans = await generateMealPlan(receiptData, userPreferences)
     console.log('✅ Meal plan generation completed')
 
-    // Store the generated meal plan in the existing meal_plans table
+    // Get or create weekly meal plan and add new meals
+    console.log('📅 Managing weekly meal plan...')
+    const weeklyPlan = await getOrCreateWeeklyMealPlan()
+    const updatedMealPlans = await addMealsToWeeklyPlan(mealPlans, weeklyPlan.week_start)
+    console.log('✅ Weekly meal plan updated with', mealPlans.length, 'new meals')
+
+    // Store the generated meal plan in the existing meal_plans table (for backward compatibility)
+    let mealPlanId: string | null = null
     if (mealPlans.length > 0) {
       console.log('💾 Storing meal plan in database...')
-      const { error: mealPlanError } = await supabase
+      const { data: mealPlanRecord, error: mealPlanError } = await supabase
         .from('meal_plans')
         .insert({
           user_id: user.id,
@@ -148,12 +155,15 @@ export async function processImages(
           meal_plan: mealPlans, // Using the existing meal_plan JSONB field
           created_at: new Date().toISOString()
         })
+        .select()
+        .single()
 
       if (mealPlanError) {
         console.error('❌ Error storing meal plan:', mealPlanError)
         // Continue without storing if there's an error
       } else {
         console.log('✅ Meal plan stored successfully in database')
+        mealPlanId = mealPlanRecord.id
       }
     }
     
@@ -163,7 +173,8 @@ export async function processImages(
       success: true, 
       receiptData,
       receiptId: receiptRecord?.id,
-      mealPlans
+      mealPlans: updatedMealPlans, // Return the full weekly meal plan
+      mealPlanId: weeklyPlan.id // Return the weekly plan ID
     }
   } catch (error) {
     console.error('❌ Error processing receipt:', error)
@@ -350,5 +361,152 @@ export async function getUserMealPlans() {
   } catch (error) {
     console.error('Error fetching user meal plans:', error)
     return []
+  }
+}
+
+export async function getOrCreateWeeklyMealPlan() {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      throw new Error('User not authenticated')
+    }
+
+    // Get the current week's start date (Monday)
+    const now = new Date()
+    const monday = new Date(now)
+    monday.setDate(now.getDate() - now.getDay() + 1) // Set to Monday
+    monday.setHours(0, 0, 0, 0)
+    
+    const weekStart = monday.toISOString().split('T')[0]
+
+    // Check if we have a weekly meal plan for this week
+    const { data: existingPlan, error: fetchError } = await supabase
+      .from('weekly_meal_plans')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('week_start', weekStart)
+      .single()
+
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      throw fetchError
+    }
+
+    if (existingPlan) {
+      console.log('📅 Found existing weekly meal plan for week starting:', weekStart)
+      return existingPlan
+    }
+
+    // Create a new weekly meal plan
+    console.log('📅 Creating new weekly meal plan for week starting:', weekStart)
+    const { data: newPlan, error: createError } = await supabase
+      .from('weekly_meal_plans')
+      .insert({
+        user_id: user.id,
+        week_start: weekStart,
+        meal_plan: [], // Start with empty meal plan
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (createError) {
+      throw createError
+    }
+
+    return newPlan
+  } catch (error) {
+    console.error('Error getting or creating weekly meal plan:', error)
+    throw error
+  }
+}
+
+export async function addMealsToWeeklyPlan(newMeals: any[], weekStart: string) {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      throw new Error('User not authenticated')
+    }
+
+    // Get current weekly meal plan
+    const { data: currentPlan, error: fetchError } = await supabase
+      .from('weekly_meal_plans')
+      .select('meal_plan')
+      .eq('user_id', user.id)
+      .eq('week_start', weekStart)
+      .single()
+
+    if (fetchError) {
+      throw fetchError
+    }
+
+    // Merge new meals with existing meals
+    const existingMeals = currentPlan.meal_plan || []
+    const mergedMeals = [...existingMeals, ...newMeals]
+
+    // Update the weekly meal plan
+    const { error: updateError } = await supabase
+      .from('weekly_meal_plans')
+      .update({
+        meal_plan: mergedMeals,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user.id)
+      .eq('week_start', weekStart)
+
+    if (updateError) {
+      throw updateError
+    }
+
+    console.log('✅ Added', newMeals.length, 'new meals to weekly plan')
+    return mergedMeals
+  } catch (error) {
+    console.error('Error adding meals to weekly plan:', error)
+    throw error
+  }
+}
+
+export async function getCurrentWeeklyMealPlan() {
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      throw new Error('User not authenticated')
+    }
+
+    // Get the current week's start date (Monday)
+    const now = new Date()
+    const monday = new Date(now)
+    monday.setDate(now.getDate() - now.getDay() + 1) // Set to Monday
+    monday.setHours(0, 0, 0, 0)
+    
+    const weekStart = monday.toISOString().split('T')[0]
+
+    // Get the weekly meal plan for this week
+    const { data: weeklyPlan, error } = await supabase
+      .from('weekly_meal_plans')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('week_start', weekStart)
+      .single()
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      throw error
+    }
+
+    if (!weeklyPlan) {
+      console.log('📅 No weekly meal plan found for week starting:', weekStart)
+      return { id: null, meal_plan: [], week_start: weekStart }
+    }
+
+    console.log('📅 Found weekly meal plan with', weeklyPlan.meal_plan?.length || 0, 'meals')
+    return weeklyPlan
+  } catch (error) {
+    console.error('Error getting current weekly meal plan:', error)
+    return { id: null, meal_plan: [], week_start: null }
   }
 } 

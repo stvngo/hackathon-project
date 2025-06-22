@@ -44,7 +44,8 @@ export default function UploadPage() {
         }
         // Redirect to AI meal plans page with the generated data
         const mealPlansParam = encodeURIComponent(JSON.stringify(result.mealPlans || []))
-        router.push(`/dashboard/ai-meal-plans?mealPlans=${mealPlansParam}`)
+        const mealPlanIdParam = result.mealPlanId ? `&mealPlanId=${result.mealPlanId}` : ''
+        router.push(`/dashboard/ai-meal-plans?mealPlans=${mealPlansParam}${mealPlanIdParam}`)
       } else {
         setError("Failed to process receipt. Please try again.")
       }

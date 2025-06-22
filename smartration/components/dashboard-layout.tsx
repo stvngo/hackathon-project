@@ -16,6 +16,7 @@ import {
   Settings,
   User,
   X,
+  Heart,
 } from "lucide-react"
 
 interface DashboardLayoutProps {
@@ -26,6 +27,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Upload Receipt", href: "/dashboard/upload", icon: Receipt },
   { name: "AI Meal Plans", href: "/dashboard/ai-meal-plans", icon: Menu },
+  { name: "Saved Meals", href: "/dashboard/saved-meals", icon: Heart },
   { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { name: "History", href: "/dashboard/history", icon: History },
   { name: "FoodGPT", href: "/dashboard/foodgpt", icon: ChefHat },

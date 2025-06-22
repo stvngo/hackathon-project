@@ -7,21 +7,48 @@ import { Card } from "@/components/ui/card"
 import { Receipt, Sparkles } from "lucide-react"
 import ImageUploader from "@/components/image-uploader"
 import DashboardLayout from "@/components/dashboard-layout"
+import { processImages } from "@/app/actions"
+import { useAuth } from "@/lib/auth-context"
 
 export default function UploadReceiptPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [receiptImage, setReceiptImage] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async () => {
     if (!receiptImage) {
-      alert("Please upload a receipt photo")
+      setError("Please upload a receipt photo")
+      return
+    }
+
+    if (!user) {
+      setError("You must be logged in to upload receipts")
       return
     }
 
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    router.push("/dashboard/meal-plans")
+    setError(null)
+
+    try {
+      // Process the receipt using the server action
+      const result = await processImages(null, receiptImage)
+      
+      if (result.success) {
+        console.log("Receipt processed successfully:", result)
+        // For now, redirect to meal plans page
+        // In the future, this will redirect to a page with AI-generated meal plans
+        router.push("/dashboard/meal-plans")
+      } else {
+        setError("Failed to process receipt. Please try again.")
+      }
+    } catch (error) {
+      console.error("Error processing receipt:", error)
+      setError("There was an error processing your receipt. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const useDemoReceipt = () => {
@@ -49,8 +76,13 @@ export default function UploadReceiptPage() {
               icon={<Receipt className="h-6 w-6 text-gray-400" />}
               label="Upload Receipt Photo"
               onChange={(file) => setReceiptImage(file)}
-              imagePreview={receiptImage}
             />
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
 
             <div className="flex gap-3">
               <Button

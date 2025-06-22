@@ -1,6 +1,7 @@
 "use server"
 
 import { extractReceiptData } from "@/lib/vision-api"
+import { createClient } from "@/lib/supabase-server"
 
 // In a real implementation, these functions would interact with AI models
 // For this MVP, we'll simulate the process with mock data
@@ -33,12 +34,35 @@ interface DayPlan {
   dinner: MealItem
 }
 
+interface OnboardingData {
+  allergies: string[]
+  dietaryRestrictions: string[]
+  householdSize: number
+  hasChildren: boolean
+  childrenAges: string
+  specialDietary: string
+  foodPreferences: string[]
+  cuisinePreferences: string[]
+  spiceTolerance: number
+  avoidIngredients: string
+  maxSpending: number
+  shoppingFrequency: string
+}
+
 export async function processImages(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _fridgeImage: File | null,
   receiptImage: File
 ) {
   try {
+    // Get the current user
+    const supabase = createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      throw new Error('User not authenticated')
+    }
+
     // Convert the receipt image to base64
     const arrayBuffer = await receiptImage.arrayBuffer()
     const base64 = Buffer.from(arrayBuffer).toString('base64')
@@ -47,15 +71,67 @@ export async function processImages(
     // Extract receipt data using Google Cloud Vision API
     const receiptData = await extractReceiptData(imageBase64)
     
+    // Store the receipt data in Supabase
+    const { data: receiptRecord, error: receiptError } = await supabase
+      .from('receipts')
+      .insert({
+        user_id: user.id,
+        store_name: receiptData.store,
+        total_amount: receiptData.total,
+        receipt_date: receiptData.date,
+        items: receiptData.items
+      })
+      .select()
+      .single()
+
+    if (receiptError) {
+      console.error('Error storing receipt:', receiptError)
+      // Continue without storing if there's an error
+    }
+    
     // Store the receipt data in a database or session
     // For this MVP, we'll just return success with the data
     return { 
       success: true, 
-      receiptData 
+      receiptData,
+      receiptId: receiptRecord?.id
     }
   } catch (error) {
     console.error('Error processing receipt:', error)
     throw new Error('Failed to process receipt image')
+  }
+}
+
+export async function saveOnboardingData(onboardingData: OnboardingData, userData: { email: string; fullName?: string }) {
+  try {
+    const supabase = createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      throw new Error('User not authenticated')
+    }
+
+    // Create or update user profile with onboarding data
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        full_name: userData.fullName || user.user_metadata?.full_name || '',
+        email: user.email,
+        onboarding_data: onboardingData,
+        onboarding_completed: true,
+        updated_at: new Date().toISOString()
+      })
+
+    if (profileError) {
+      console.error('Error saving profile:', profileError)
+      throw new Error('Failed to save onboarding data')
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error saving onboarding data:', error)
+    throw new Error('Failed to save onboarding data')
   }
 }
 
@@ -99,4 +175,56 @@ export async function getMealPlan(): Promise<DayPlan[]> {
   ]
 
   return mockMealPlan
+}
+
+export async function getUserReceipts() {
+  try {
+    const supabase = createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      throw new Error('User not authenticated')
+    }
+
+    const { data: receipts, error } = await supabase
+      .from('receipts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw error
+    }
+
+    return receipts
+  } catch (error) {
+    console.error('Error fetching user receipts:', error)
+    return []
+  }
+}
+
+export async function hasCompletedOnboarding() {
+  try {
+    const supabase = createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      return false
+    }
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      return false
+    }
+
+    return profile?.onboarding_completed === true
+  } catch (error) {
+    console.error('Error checking onboarding status:', error)
+    return false
+  }
 } 

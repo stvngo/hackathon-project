@@ -12,6 +12,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Slider } from "@/components/ui/slider"
 import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, ArrowRight, Users, Heart, ChefHat, DollarSign, Utensils } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { saveOnboardingData } from "@/app/actions"
 
 interface OnboardingData {
   allergies: string[]
@@ -31,6 +33,7 @@ interface OnboardingData {
 interface UserData {
   email: string
   firstName?: string
+  fullName?: string
 }
 
 const STEPS = [
@@ -43,6 +46,7 @@ const STEPS = [
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { user, loading } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -63,14 +67,39 @@ export default function OnboardingPage() {
   })
 
   useEffect(() => {
-    // Check if user is logged in
-    const user = localStorage.getItem("user")
-    if (!user) {
-      router.push("/login")
-      return
+    // Check if user is authenticated
+    if (!loading) {
+      if (!user) {
+        // If no user, redirect to login
+        router.push("/login")
+        return
+      }
+
+      // Check if user has verified their email
+      if (!user.email_confirmed_at) {
+        // If email not verified, redirect to email verification
+        router.push("/verify-email")
+        return
+      }
+
+      // User is authenticated and verified, get their data
+      setUserData({
+        email: user.email || '',
+        firstName: user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.name?.split(' ')[0] || '',
+        fullName: user.user_metadata?.full_name || user.user_metadata?.name || ''
+      })
+
+      // Check if there's onboarding data from signup (for users who signed up before email verification)
+      const onboardingUser = localStorage.getItem("onboarding_user")
+      if (onboardingUser) {
+        const storedData = JSON.parse(onboardingUser)
+        setUserData(prev => ({
+          ...prev,
+          ...storedData
+        }))
+      }
     }
-    setUserData(JSON.parse(user))
-  }, [router])
+  }, [user, loading, router])
 
   const handleNext = () => {
     if (currentStep < STEPS.length) {
@@ -90,21 +119,22 @@ export default function OnboardingPage() {
     setIsLoading(true)
 
     try {
-      // Save onboarding data
-      const completeUserData = {
-        ...userData,
-        onboarding: formData,
-        isNewUser: false,
+      // Save onboarding data using server action
+      if (user && userData) {
+        await saveOnboardingData(formData, {
+          email: userData.email,
+          fullName: userData.fullName
+        })
       }
 
-      localStorage.setItem("user", JSON.stringify(completeUserData))
+      // Clear onboarding data from localStorage
+      localStorage.removeItem('onboarding_user')
 
-      // Simulate saving to backend
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
+      // Redirect to upload page
       router.push("/upload")
     } catch (error) {
       console.error("Error completing onboarding:", error)
+      // You might want to show an error message to the user here
     } finally {
       setIsLoading(false)
     }
@@ -120,7 +150,7 @@ export default function OnboardingPage() {
 
   const progress = (currentStep / STEPS.length) * 100
 
-  if (!userData) {
+  if (loading || !userData) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
 
@@ -128,7 +158,7 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome, {userData.firstName}!</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome, {userData.firstName || userData.email}!</h1>
           <p className="text-gray-600">Let&apos;s personalize your meal planning experience</p>
           <Progress value={progress} className="mt-4" />
           <p className="text-sm text-gray-500 mt-2">

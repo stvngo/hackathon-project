@@ -1,109 +1,101 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Utensils, Eye, EyeOff } from "lucide-react"
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useAuth } from '@/lib/auth-context'
+import { ArrowLeft, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  })
-  const [showPassword, setShowPassword] = useState(false)
+  const { signIn } = useAuth()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-    setError("")
-  }
+  const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
+
     setIsLoading(true)
-    setError("")
 
     try {
-      // Simulate login process
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // In a real app, you'd validate credentials here
-      if (formData.email && formData.password) {
-        // Simulate successful login
-        localStorage.setItem("user", JSON.stringify({ email: formData.email }))
-        router.push("/upload")
+      console.log('Attempting to sign in...')
+      const { data, error } = await signIn(email, password)
+      
+      if (error) {
+        console.error('Sign in error:', error)
+        setError(error.message)
       } else {
-        setError("Please fill in all fields")
+        console.log('Sign in successful, redirecting to upload...')
+        // Just redirect to upload, middleware will handle the rest
+        router.push('/upload')
       }
-    } catch (
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      _err
-    ) {
-      setError("Login failed. Please try again.")
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-green-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="flex justify-center items-center gap-2 mb-4">
-            <Utensils className="h-8 w-8 text-green-600" />
-            <span className="text-2xl font-bold">SmartRation</span>
-          </div>
+          <Link href="/" className="inline-flex items-center text-green-600 hover:text-green-700 mb-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Link>
           <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
-          <p className="mt-2 text-sm text-gray-600">Sign in to your account to continue meal planning</p>
+          <p className="mt-2 text-sm text-gray-600">
+            Sign in to your SmartRation account
+          </p>
         </div>
 
-        <Card className="p-8">
+        <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">{error}</div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
+            <div>
+              <Label htmlFor="email" className="flex items-center">
+                <Mail className="h-4 w-4 mr-2" />
+                Email Address
+              </Label>
               <Input
                 id="email"
-                name="email"
                 type="email"
-                value={formData.email}
-                onChange={handleChange}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="w-full"
+                className="mt-1"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
+            <div>
+              <Label htmlFor="password" className="flex items-center">
+                <Lock className="h-4 w-4 mr-2" />
+                Password
+              </Label>
+              <div className="relative mt-1">
                 <Input
                   id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={handleChange}
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  className="w-full pr-10"
+                  className="pr-10"
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4 text-gray-400" />
@@ -114,55 +106,37 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
-                </label>
+            {error && (
+              <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
+                {error}
               </div>
+            )}
 
-              <div className="text-sm">
-                <Link href="/forgot-password" className="font-medium text-green-600 hover:text-green-500">
-                  Forgot your password?
-                </Link>
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
+            <Button
+              type="submit"
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
+          </form>
 
-            <Separator />
-
-            <div className="text-center">
+          <div className="mt-6 space-y-4 text-center">
+            <div>
+              <Link href="/forgot-password" className="text-sm text-green-600 hover:text-green-700">
+                Forgot your password?
+              </Link>
+            </div>
+            <div>
               <p className="text-sm text-gray-600">
-                Don&apos;t have an account?{" "}
-                <Link href="/signup" className="font-medium text-green-600 hover:text-green-500">
-                  Sign up for free
+                Don't have an account?{' '}
+                <Link href="/signup" className="font-medium text-green-600 hover:text-green-700">
+                  Sign up
                 </Link>
               </p>
             </div>
-          </form>
+          </div>
         </Card>
-
-        <div className="text-center">
-          <p className="text-xs text-gray-500">
-            By signing in, you agree to our{" "}
-            <Link href="/terms" className="text-green-600 hover:text-green-500">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="text-green-600 hover:text-green-500">
-              Privacy Policy
-            </Link>
-          </p>
-        </div>
       </div>
     </div>
   )

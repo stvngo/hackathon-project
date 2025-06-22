@@ -66,13 +66,8 @@ export async function generateMealPlan(
   userPreferences: UserPreferences = {}
 ): Promise<MealPlan[]> {
   try {
-    console.log('🎯 Starting meal plan generation with Claude AI...')
-    console.log('📋 Receipt data:', JSON.stringify(receiptData, null, 2))
-    console.log('👤 User preferences:', JSON.stringify(userPreferences, null, 2))
-
     // Create a comprehensive prompt for Claude
     const prompt = createMealPlanPrompt(receiptData, userPreferences)
-    console.log('📝 Generated prompt length:', prompt.length, 'characters')
 
     const message = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
@@ -86,16 +81,9 @@ export async function generateMealPlan(
       ],
     })
 
-    console.log('🤖 Claude AI response received')
-    console.log('📊 Response usage:', message.usage)
-
     // Parse the response to extract meal plans
     const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
-    console.log('📄 Raw Claude response:', responseText.substring(0, 500) + '...')
-    
     const mealPlans = parseMealPlanResponse(responseText)
-    console.log('🍽️ Parsed meal plans:', JSON.stringify(mealPlans, null, 2))
-    console.log('✅ Meal plan generation completed successfully')
     
     return mealPlans;
   } catch (error) {
@@ -207,25 +195,18 @@ Be creative with ingredient combinations and cooking methods to maximize the use
 
 function parseMealPlanResponse(response: string): MealPlan[] {
   try {
-    console.log('🔍 Parsing Claude response...')
-    
     // Extract JSON from the response
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.warn('⚠️ No JSON found in response, using fallback meal plan')
       throw new Error('No JSON found in response');
     }
 
-    console.log('📋 Extracted JSON:', jsonMatch[0].substring(0, 300) + '...')
-    
     const parsed = JSON.parse(jsonMatch[0]);
     const mealPlans = parsed.mealPlans || [];
     
-    console.log('✅ Successfully parsed', mealPlans.length, 'meal plans')
     return mealPlans;
   } catch (error) {
     console.error('❌ Error parsing Claude response:', error);
-    console.log('🔄 Using fallback meal plan...')
     // Return a fallback meal plan if parsing fails
     return generateFallbackMealPlan();
   }

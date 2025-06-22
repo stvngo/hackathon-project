@@ -56,41 +56,55 @@ export async function processImages(
   receiptImage: File
 ) {
   try {
+    console.log('📸 Starting receipt processing...')
+    console.log('📄 Receipt file:', receiptImage.name, 'Size:', receiptImage.size, 'bytes')
+    
     // Get the current user
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
       throw new Error('User not authenticated')
     }
 
+    console.log('👤 User authenticated:', user.id)
+
     // Convert the receipt image to base64
+    console.log('🔄 Converting receipt image to base64...')
     const arrayBuffer = await receiptImage.arrayBuffer()
     const base64 = Buffer.from(arrayBuffer).toString('base64')
     const imageBase64 = `data:${receiptImage.type};base64,${base64}`
+    console.log('✅ Image converted to base64, length:', imageBase64.length)
 
     // Extract receipt data using Google Cloud Vision API
+    console.log('🔍 Calling Google Vision API to extract receipt data...')
     const receiptData = await extractReceiptData(imageBase64)
+    console.log('✅ Google Vision API response received')
+    console.log('📋 Extracted receipt data:', JSON.stringify(receiptData, null, 2))
     
     // Store the receipt data in Supabase
+    console.log('💾 Storing receipt data in database...')
     const { data: receiptRecord, error: receiptError } = await supabase
       .from('receipts')
       .insert({
         user_id: user.id,
-        store_name: receiptData.store,
-        total_amount: receiptData.total,
-        receipt_date: receiptData.date,
-        items: receiptData.items
+        store_name: receiptData.store || 'Unknown Store',
+        total_amount: receiptData.total || 0,
+        receipt_date: receiptData.date || new Date().toISOString().split('T')[0],
+        items: receiptData.items || []
       })
       .select()
       .single()
 
     if (receiptError) {
-      console.error('Error storing receipt:', receiptError)
+      console.error('❌ Error storing receipt:', receiptError)
       // Continue without storing if there's an error
+    } else {
+      console.log('✅ Receipt stored in database with ID:', receiptRecord.id)
     }
 
     // Get user preferences from profile table - specifically onboarding_data
+    console.log('👤 Fetching user preferences...')
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('onboarding_data')
@@ -98,7 +112,9 @@ export async function processImages(
       .single()
 
     if (profileError) {
-      console.error('Error fetching user profile:', profileError)
+      console.error('❌ Error fetching user profile:', profileError)
+    } else {
+      console.log('✅ User preferences loaded')
     }
 
     // Prepare user preferences for Claude AI from onboarding_data
@@ -117,14 +133,9 @@ export async function processImages(
     } : {}
 
     // Generate meal plan using Claude AI with user preferences
-    console.log('🚀 Starting meal plan generation...')
-    console.log('👤 User preferences for meal planning:', JSON.stringify(userPreferences, null, 2))
-    
+    console.log('🤖 Generating meal plan with Claude AI...')
     const mealPlans = await generateMealPlan(receiptData, userPreferences)
-    
-    console.log('🎉 Meal plan generation completed!')
-    console.log('📊 Generated', mealPlans.length, 'days of meal plans')
-    console.log('🍽️ First day sample:', JSON.stringify(mealPlans[0], null, 2))
+    console.log('✅ Meal plan generation completed')
 
     // Store the generated meal plan in the existing meal_plans table
     if (mealPlans.length > 0) {
@@ -147,6 +158,7 @@ export async function processImages(
     }
     
     // Return success with the data
+    console.log('🎉 Receipt processing completed successfully!')
     return { 
       success: true, 
       receiptData,
@@ -154,14 +166,14 @@ export async function processImages(
       mealPlans
     }
   } catch (error) {
-    console.error('Error processing receipt:', error)
+    console.error('❌ Error processing receipt:', error)
     throw new Error('Failed to process receipt image')
   }
 }
 
 export async function saveOnboardingData(onboardingData: OnboardingData, userData: { email: string; fullName?: string }) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
@@ -236,7 +248,7 @@ export async function getMealPlan(): Promise<DayPlan[]> {
 
 export async function getUserReceipts() {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
@@ -262,7 +274,7 @@ export async function getUserReceipts() {
 
 export async function hasCompletedOnboarding() {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
@@ -288,7 +300,7 @@ export async function hasCompletedOnboarding() {
 
 export async function getUserMealPlans() {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
@@ -313,7 +325,28 @@ export async function getUserMealPlans() {
       throw error
     }
 
-    return mealPlans
+    console.log('🗄️ Raw meal plans from database:', mealPlans)
+    
+    // Transform the data to match the expected format
+    const transformedMealPlans = mealPlans.map(record => {
+      console.log('📋 Meal plan record:', record)
+      console.log('🍽️ Meal plan data:', record.meal_plan)
+      
+      // If meal_plan is an array, return it directly
+      if (Array.isArray(record.meal_plan)) {
+        return record.meal_plan
+      }
+      
+      // If it's a single object, wrap it in an array
+      if (record.meal_plan && typeof record.meal_plan === 'object') {
+        return [record.meal_plan]
+      }
+      
+      return []
+    }).flat()
+
+    console.log('🔄 Transformed meal plans:', transformedMealPlans)
+    return transformedMealPlans
   } catch (error) {
     console.error('Error fetching user meal plans:', error)
     return []

@@ -16,10 +16,12 @@ import {
   Download,
   Share2,
   Heart,
-  Star
+  Star,
+  RefreshCw
 } from "lucide-react"
 import DashboardLayout from "@/components/dashboard-layout"
 import { useAuth } from "@/lib/auth-context"
+import { getUserMealPlans } from "@/app/actions"
 
 interface Meal {
   name: string
@@ -48,33 +50,92 @@ export default function AIMealPlansPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Get meal plans from URL params (passed from upload page)
-    const mealPlansParam = searchParams.get('mealPlans')
-    if (mealPlansParam) {
-      try {
-        const parsed = JSON.parse(decodeURIComponent(mealPlansParam))
-        setMealPlans(parsed)
-      } catch (error) {
-        console.error('Error parsing meal plans:', error)
-        setError('Failed to load meal plans')
-      }
-    } else {
-      // If no meal plans in URL, try to get from localStorage (fallback)
-      const stored = localStorage.getItem('currentMealPlans')
-      if (stored) {
+    const loadMealPlans = async () => {
+      // Get meal plans from URL params (passed from upload page)
+      const mealPlansParam = searchParams.get('mealPlans')
+      if (mealPlansParam) {
         try {
-          setMealPlans(JSON.parse(stored))
+          const parsed = JSON.parse(decodeURIComponent(mealPlansParam))
+          console.log('🔍 Parsed meal plans from URL:', parsed)
+          console.log('📊 Meal plans structure:', JSON.stringify(parsed, null, 2))
+          
+          // Validate that parsed is an array
+          if (Array.isArray(parsed)) {
+            setMealPlans(parsed)
+            // Store in localStorage as backup
+            localStorage.setItem('currentMealPlans', JSON.stringify(parsed))
+          } else {
+            console.error('❌ Meal plans is not an array:', parsed)
+            setError('Invalid meal plan format')
+          }
         } catch (error) {
+          console.error('Error parsing meal plans:', error)
           setError('Failed to load meal plans')
         }
       } else {
-        setError('No meal plans found')
+        // If no meal plans in URL, try to get from localStorage (fallback)
+        const stored = localStorage.getItem('currentMealPlans')
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored)
+            console.log('🔍 Parsed meal plans from localStorage:', parsed)
+            console.log('📊 Meal plans structure:', JSON.stringify(parsed, null, 2))
+            
+            // Validate that parsed is an array
+            if (Array.isArray(parsed)) {
+              setMealPlans(parsed)
+            } else {
+              console.error('❌ Meal plans from localStorage is not an array:', parsed)
+              setError('Invalid meal plan format')
+            }
+          } catch (error) {
+            setError('Failed to load meal plans')
+          }
+        } else {
+          // If no cached data, try to fetch from database
+          console.log('🗄️ No cached meal plans, fetching from database...')
+          try {
+            const dbMealPlans = await getUserMealPlans()
+            console.log('📊 Database meal plans:', dbMealPlans)
+            
+            if (dbMealPlans && dbMealPlans.length > 0) {
+              // Extract meal plan data from database records
+              const extractedMealPlans = dbMealPlans.map(record => record.meal_plan).flat()
+              console.log('🔄 Extracted meal plans from database:', extractedMealPlans)
+              
+              if (Array.isArray(extractedMealPlans) && extractedMealPlans.length > 0) {
+                setMealPlans(extractedMealPlans)
+                // Store in localStorage for future use
+                localStorage.setItem('currentMealPlans', JSON.stringify(extractedMealPlans))
+              } else {
+                setError('No meal plans found in database')
+              }
+            } else {
+              setError('No meal plans found in database')
+            }
+          } catch (error) {
+            console.error('❌ Error fetching meal plans from database:', error)
+            setError('Failed to load meal plans from database')
+          }
+        }
       }
+      setIsLoading(false)
     }
-    setIsLoading(false)
+
+    loadMealPlans()
   }, [searchParams])
 
   const currentPlan = mealPlans[currentDay]
+  
+  // Debug logging
+  console.log('🎯 Current day:', currentDay)
+  console.log('📋 Current plan:', currentPlan)
+  console.log('🍽️ Current plan structure:', JSON.stringify(currentPlan, null, 2))
+  
+  // Validate current plan structure
+  const isValidPlan = currentPlan && 
+    typeof currentPlan === 'object' && 
+    (currentPlan.breakfast || currentPlan.lunch || currentPlan.dinner)
 
   const getMealTypeColor = (type: string) => {
     switch (type) {
@@ -102,6 +163,42 @@ export default function AIMealPlansPage() {
     }
   }
 
+  const refreshMealPlans = async () => {
+    console.log('🔄 Refreshing meal plans...')
+    setIsLoading(true)
+    setError(null)
+    
+    // Clear cached data
+    localStorage.removeItem('currentMealPlans')
+    
+    try {
+      const dbMealPlans = await getUserMealPlans()
+      console.log('📊 Database meal plans:', dbMealPlans)
+      
+      if (dbMealPlans && dbMealPlans.length > 0) {
+        // Extract meal plan data from database records
+        const extractedMealPlans = dbMealPlans.map(record => record.meal_plan).flat()
+        console.log('🔄 Extracted meal plans from database:', extractedMealPlans)
+        
+        if (Array.isArray(extractedMealPlans) && extractedMealPlans.length > 0) {
+          setMealPlans(extractedMealPlans)
+          setCurrentDay(0)
+          // Store in localStorage for future use
+          localStorage.setItem('currentMealPlans', JSON.stringify(extractedMealPlans))
+        } else {
+          setError('No meal plans found in database')
+        }
+      } else {
+        setError('No meal plans found in database')
+      }
+    } catch (error) {
+      console.error('❌ Error fetching meal plans from database:', error)
+      setError('Failed to load meal plans from database')
+    }
+    
+    setIsLoading(false)
+  }
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -112,14 +209,16 @@ export default function AIMealPlansPage() {
     )
   }
 
-  if (error || !currentPlan) {
+  if (error || !currentPlan || !isValidPlan) {
     return (
       <DashboardLayout>
         <div className="max-w-5xl mx-auto px-4 md:px-8 space-y-8">
           <div className="text-center">
             <ChefHat className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gray-900 mb-2">No Meal Plans Found</h1>
-            <p className="text-gray-600 mb-6">{error || 'Please upload a receipt to generate meal plans'}</p>
+            <p className="text-gray-600 mb-6">
+              {error || (!currentPlan ? 'No meal plan data available' : 'Invalid meal plan structure')}
+            </p>
             <Button onClick={() => router.push('/dashboard/upload')} className="bg-green-600 hover:bg-green-700">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Upload Receipt
@@ -146,6 +245,10 @@ export default function AIMealPlansPage() {
               </div>
             </div>
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={refreshMealPlans}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
                 Export
@@ -170,7 +273,9 @@ export default function AIMealPlansPage() {
 
             <div className="text-center">
               <h2 className="text-lg font-medium text-gray-900">{currentPlan.day}</h2>
-              <p className="text-sm text-gray-600">${currentPlan.totalDailyCost.toFixed(2)} total cost</p>
+              <p className="text-sm text-gray-600">
+                ${(currentPlan.totalDailyCost || 0).toFixed(2)} total cost
+              </p>
             </div>
 
             <Button 
@@ -201,6 +306,19 @@ export default function AIMealPlansPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {(['breakfast', 'lunch', 'dinner'] as const).map((mealType) => {
             const meal = currentPlan[mealType]
+            
+            // Skip rendering if meal is undefined
+            if (!meal) {
+              return (
+                <Card key={mealType} className="p-6 border border-gray-200 shadow-sm">
+                  <div className="text-center text-gray-500">
+                    <span className="text-2xl">{getMealTypeIcon(mealType)}</span>
+                    <p className="mt-2">No {mealType} planned</p>
+                  </div>
+                </Card>
+              )
+            }
+            
             return (
               <Card key={mealType} className="p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                 <div className="space-y-4">
@@ -214,24 +332,24 @@ export default function AIMealPlansPage() {
                     </div>
                     <div className="flex items-center gap-1 text-sm text-gray-500">
                       <Clock className="h-3 w-3" />
-                      {meal.prepTime}m
+                      {(meal.prepTime || 0)}m
                     </div>
                   </div>
 
                   {/* Meal Name */}
-                  <h3 className="text-lg font-semibold text-gray-900">{meal.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{meal.name || 'Unnamed Meal'}</h3>
 
                   {/* Cost */}
                   <div className="flex items-center gap-1 text-green-600 font-medium">
                     <DollarSign className="h-4 w-4" />
-                    {meal.cost.toFixed(2)}
+                    {(meal.cost || 0).toFixed(2)}
                   </div>
 
                   {/* Ingredients */}
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Ingredients:</h4>
                     <div className="flex flex-wrap gap-1">
-                      {meal.ingredients.map((ingredient, index) => (
+                      {(meal.ingredients || []).map((ingredient, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {ingredient}
                         </Badge>
@@ -242,13 +360,13 @@ export default function AIMealPlansPage() {
                   {/* Instructions */}
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Instructions:</h4>
-                    <p className="text-sm text-gray-600 leading-relaxed">{meal.instructions}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{meal.instructions || 'No instructions available'}</p>
                   </div>
 
                   {/* Nutritional Info */}
                   <div className="bg-gray-50 rounded-lg p-3">
                     <h4 className="font-medium text-gray-900 mb-1">Nutrition:</h4>
-                    <p className="text-sm text-gray-600">{meal.nutritionalInfo}</p>
+                    <p className="text-sm text-gray-600">{meal.nutritionalInfo || 'Nutritional information not available'}</p>
                   </div>
 
                   {/* Action Buttons */}
@@ -272,7 +390,9 @@ export default function AIMealPlansPage() {
         <Card className="p-6 border border-gray-200 shadow-sm bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">${currentPlan.totalDailyCost.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                ${(currentPlan.totalDailyCost || 0).toFixed(2)}
+              </div>
               <div className="text-sm text-gray-600">Daily Cost</div>
             </div>
             <div className="text-center">

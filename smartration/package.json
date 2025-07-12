@@ -2,6 +2,8 @@
   "name": "smartration",
   "version": "0.1.0",
   "private": true,
+  "description": "AI-powered meal planning and nutrition tracking application",
+  "keywords": ["meal-planning", "nutrition", "ai", "health", "food", "diet", "nextjs", "supabase"],
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
